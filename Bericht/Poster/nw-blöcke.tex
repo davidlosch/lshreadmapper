@@ -1,0 +1,32 @@
+\documentclass[english]{short}
+\usepackage{color}
+\definecolor{gray}{rgb}{.6,.6,.6}
+
+\begin{document}
+
+\section{Introduction}
+
+
+\section{Insertion box}
+For insertion variants the algorithm takes the last filled column before the insertion's position and speculatively continues the computation of the alignment on the insertion string. For the reference base after the insertion's position, the algorithm decides, whether he uses the insertion string for optimization or just the reference string. The relevant predecessors of each entry are indicated by arrows.
+
+\section{Deletion box}
+Deletion variants can be handled by skipping the affected columns for the computation. For each entry the algorithm decides, whether he uses the previous reference base or the reference base before the deletion variant. For the sake of simplicity some arrows are left out for this variant and only indicated by the large arrow above the matrix.
+
+\section{SNP box}
+The algorithm uses the IUPAC alphabet for the reference string, which allows it to encode arbitrary SNPs within the reference sequence. The semantic of the IUPAC chars is considered when comparing reference bases with read bases.
+
+\section{Example}
+\begin{tabular}{lcccccccccccccc}
+Without variants:\\
+\hline
+Reference: & A & G & A & A & & &  C & T & A & A & T & G\\
+Read: & & & & A & & & C & \textcolor{red}{G} & \textcolor{red}{C} & \textcolor{red}{T} & T\\
+\\
+Using variants:\\
+\hline
+Reference: & A & G & A & A & \textcolor{blue}{C} & \textcolor{blue}{G} & C & T & \textcolor{gray}{A} & \textcolor{gray}{A} & T & G\\
+Read: & & & & A & \textcolor{blue}{C} & \textcolor{blue}{G} & C & T & & & T\\
+
+\end{tabular}
+\end{document}

@@ -1,0 +1,41 @@
+\include{header}
+\include{StatistikDaten}
+\begin{document}
+\include{kapitel/titelseite}
+% Neues Seitenformat für die folgenden Seiten
+\newgeometry{a4paper,left=2cm,right=5cm,bottom=3.5cm,top=3cm,marginparwidth=1cm, marginparsep=1cm}
+\renewcommand{\baselinestretch}{1}\normalsize
+\blankpage
+%\include{chapters/titelseite_innen}
+%\blankpage
+\pagenumbering{roman}
+\tableofcontents
+% Vergrößern des Abstands zwischen Absätzen auf 6pt
+\parskip 6pt
+\cleardoublepage
+\pagenumbering{arabic}
+% Hier werden die Kapitel includiert
+\include{kapitel/einleitung}	
+\include{kapitel/OrganisatorischeGrundlagen}
+\include{kapitel/BiologischeGrundlagen}
+\include{kapitel/Statistiken}
+\include{kapitel/Dateiformate}
+\include{kapitel/Lsh}
+\include{kapitel/AlignmentVonReads}
+\include{kapitel/Fazit}
+\appendix
+%\include{kapitel/anhang}
+%Abbildungsverzeichnis
+%\listoffigures
+%\addcontentsline{toc}{chapter}{Abbildungsverzeichnis}
+%\cleardoublepage
+% Algorithmenverzeichnis
+%\listofalgorithms
+%\addcontentsline{toc}{chapter}{Algorithmenverzeichnis}
+%\cleardoublepage
+% Literaturverzeichnis
+%\bibliographystyle{abbrv}
+\bibliographystyle{../Literatur/abbrvnat}
+\bibliography{../Literatur/literatur}
+\addcontentsline{toc}{chapter}{\bibname}
+\end{document}

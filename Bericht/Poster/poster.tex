@@ -1,0 +1,19 @@
+\documentclass[english]{short}
+
+\title{Variant Tolerant Read Mapping with Locality Sensitive Hashing}
+
+\author{Marcel Bargull, Kada Benadjemia, Benjamin Kramer, David Losch, Jens Quedenfeld, Sven Schrinner, Jan Stricker, Dominik K{\"o}ppl, Dominik Kopczynski, Henning Timm, Johannes Fischer and Sven Rahmann\\
+{\normalsize\it Department for Computer Science, TU Dortmund}\\
+pg583.cs@lists.tu-dortmund.de}
+
+\begin{document}
+\maketitle
+The rapid development of genomic sequencing technologies in the past decades has outgrown the advances of computing power and therefore requires efficient read mapping algorithms \cite{Loh2012}. Read mappers align sequenced reads to a reference genome, where a set of reads aligned to the same position can hint at possible mutations. Even though many fast read mappers have been published in the recent years, most of them do not consider common variants of the reference genome.
+Variant tolerance highly increases accuracy of read mappers when aligning reads against a species' pangenome. \\
+We have developed a new read mapper for variant tolerant alignment by usage of hash based filtering in combination with an alignment algorithm based on dynamic programming. In the first step, we use Locality Sensitive Hashing (LSH), initially designed for finding similarities in documents, for candidate filtering \cite{Adoni2006}. We treat reads and windows of the reference genome as documents, which are compared by LSH.\\
+As a result, we obtain an approximative mapping to the reference regions. This leads to a dramatical reduction of the reference length and therefore semi-global alignment becomes reasonable. The aligner handles variants like SNPs, insertions and deletions and decides which variants lead to the best alignment.
+New genetic variants and gene mutations can be found by observing the mismatches from the alignments.
+%\vspace{-0.25cm}
+\bibliography{../Literatur/literatur}
+
+\end{document}

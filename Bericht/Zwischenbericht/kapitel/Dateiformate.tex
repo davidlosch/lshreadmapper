@@ -1,0 +1,32 @@
+% Dateiformate.tex
+\chapter{Dateiformate}
+\label{sec:data}
+\marginpar{Jan}
+Zur Speicherung der Sequenzen existieren eine Reihe von standardisierten Dateiformaten mit unterschiedlichen Stärken und Schwächen. Im folgenden Abschnitt wird auf die wichtigsten Eigenschaften der verwendeten Spezifikationen eingegangen.
+\section{FASTA}
+\label{sec:data:fasta}
+\marginpar{Jan}
+Ein sehr einfaches Dateiformat für die Speicherung einer einzelnen DNA-Sequenz ist das \textbf{FASTA-Format}. Es zeichnet sich durch eine sehr einfache Struktur aus, da es nur aus einer Zeile mit Identifikationsdaten und der eigentlichen Sequenz besteht. Der Inhalt der ersten, beschreibenden Zeile ist frei wählbar. Es existieren jedoch verschiedene Richtlinien der Gestaltung, die von den jeweiligen Datenanbietern vorgegeben werden.
+\section{FASTQ}
+\label{sec:data:fastq}
+\marginpar{Jan}
+Eine Erweiterung des FASTA-Formats ist das Dateiformat \textbf{FASTQ}, welches die DNA-Sequenz um Qualitätsangaben für die korrekte Erfassung der jeweiligen Basen erweitert. 
+
+Für die Angabe der Qualitätswerte existieren verschiedene Metriken der Interpretation. Eine häufig verwendete Metrik, bezeichnet als \textbf{Sanger-} oder \textbf{Phred}-Qualitätswert, berechnet sich wie folgt \citep{Ewing1998}:
+\begin{equation}
+	Q = -10 \log_{10} P
+\end{equation}
+Dabei bezeichnet $P$ die Wahrscheinlichkeit, dass die zugehörige Base falsch erfasst wurde. Ein Qualitätswert von $30$ repräsentiert somit eine Fehlerrate von $0.1 \%$. Je nach verwendeter Sequenziermaschine liegen die üblichen Werte in den Intervallen $(33, 73)$ und $(64, 104)$. % TODO: Wie wird die Fehlerwahrscheinlichkeit gemessen? (siehe in \citet{Ewing1998}). 
+
+Die Umrechnung der Fehlerwahrscheinlichkeiten in diese Qualitätswerte wird aus Platzgründen vollzogen. Die Qualitätswerte lassen sich einfach durch ihre jeweilige ASCII-Repräsentation kodieren. Ein Wert von $33$ entspräche beispielsweise dem ~Zeichen \textit{!}, ein Wert von 104 einem \textit{h}. Die kodierte Angabe für jede sequenzierte Base wird in derselben Reihenfolge in der Datei festgehalten, so dass eine zeichengenaue Zuordnung möglich ist.
+\section{SAM/BAM}
+\label{sec:data:sambam}
+\marginpar{Marcel}
+
+\subsection{CIGAR-String}
+\label{sec:data:cigar}
+\marginpar{Marcel}
+
+\section{VCF}
+\label{sec:data:vcf}
+\marginpar{Marcel}

@@ -1,0 +1,597 @@
+\chapter{Alignment von Reads}
+\label{sec:align}
+\marginpar{Sven}
+
+Der bisher beschriebene Algorithmus auf Basis des Locality-Sensitive-Hashing kann einen Read auf eine oder mehrere Abschnitte des Referenzgenoms abbilden. Allerdings hat dieses Verfahren aufgrund seiner Funktionsweise zwei Nachteile. Zum einen beinhaltet es eine Zufallskomponente, sodass nicht alle Treffer zwischen Reads und Referenzabschnitten gefunden werden bzw. nicht jeder gefundene Treffer auch tatsächlich einer ist. Zum anderen paart es lediglich Reads und  große Sequenzabschnitte miteinander, ein genaues Alignment findet jedoch nicht statt. Für Letzteres verwenden wir daher einen zweiten Algorithmus, der für jeden Read und eine vorgegebene Fehlerschranke ein bestmögliches Alignment innerhalb seines Referenzabschnittes sucht. Bei diesem Algorithmus handelt es sich um eine Variante des Needleman-Wunsch-Algorithmus, der auf dynamischer Programmierung basiert. Die Laufzeit des Algorithmus ist linear in der Länge des Referenzabschnittes, sodass die Vorverarbeitung durch das Locality-Sensitive-Hashing erforderlich ist, um praktikable Laufzeiten zu erreichen.
+
+\section{Globales und semiglobales Alignment}
+\label{sec:align:basics}
+\marginpar{Sven}
+
+Ein Alignment ist informell eine zeichenweise Zuordnung eines Musters $p$ (engl.: \textit{pattern}) zu einem Text $t$. Dazu können sowohl in  $p$ als auch $t$ Leerzeichen bzw. Lücken eingefügt werden, sodass ein Zeichen von $p$ auch einer Lücke in $t$ zugeordnet werden kann und umgekehrt. Einzig der Fall, dass zwei Lücken sich gegenseitig zugeordnet werden, ist nicht zulässig, damit nicht unendlich viele Lücken in beide Sequenzen eingefügt werden können.
+
+\begin{beispiel}
+\label{bsp:align:basics:alignment}
+Zwei Alignments zwischen dem Text $t = \texttt{BARBARA}$ und dem Muster $p = \texttt{RABABA}$. Die horizontalen Striche stehen für eingefügte Lücken.
+
+\begin{multicols}{2}
+\texttt{R A B A - B A - -}\\
+\texttt{- - B A R B A R A}\\
+
+\texttt{R A B A B A - - - - - - -}\\
+\texttt{- - - - - - B A R B A R A}\\
+\end{multicols}
+\end{beispiel}
+
+Alignments lassen sich wie folgt auch formal definieren.
+
+\begin{definition}[vgl \citep{Rahmann2013}, Definition 4.7]
+\label{def:align:basics:alignment}
+Seien $p, t \in \Sigma^*$ zwei Strings. Ein Alignment $A = A_1 \cdots A_k$ zwischen $p$ und $t$ ist ein String über dem Alphabet $\left( \Sigma \cup \{ - \} \right)^2 \setminus \{ -,-\}$ mit $\pi_1(A) = p$ und $\pi_2(A) = t$. Dabei ist $\pi_1$ ein String-Homorphismus mit $\pi_1(A_i) = \pi_1((a,b)_i) := a$ für $a \in \Sigma$ und $\pi_1((-,b)_i) := \epsilon$ für alle $i \in \{1, \ldots, k\}$. Analog ist $\pi_2$ für die zweite Komponente definiert.
+\end{definition}
+
+Ein solches Alignment wird auch als \textit{globales} Alignment bezeichnet, da das gesamte Muster und der gesamte Text zueinander aligniert werden. Es fällt auf, dass es vier verschiedene Arten von Zeichen in einem Alignment gibt:
+
+\begin{enumerate}
+\item Beide Komponenten sind gleich (entspricht einem \textit{match} zwischen zwei Zeichen)
+\item Beide Komponenten sind unterschiedlich und keine Lücken (entspricht einem \textit{mismatch} zwischen zwei Zeichen)
+\item Die erste Komponente ist eine Lücke, die andere ein Zeichen aus $t$ (entspricht einer \textit{insertion})
+\item Die erste Komponente ist ein Zeichen aus $p$, die andere eine Lücke (entspricht einer \textit{deletion})
+\end{enumerate}
+
+Intuitiv sind natürlich Alignments interessant, bei denen möglichst viele Teile von $p$ und $t$ zusammenpassen. Der erste Ansatz ist die Minimierung der Fehlerzahl. Die Anzahl der \textit{Fehler} entspricht dabei der Anzahl der Vorkommen von Zeichen des zweiten, dritten und vierten Falls. Diese Arten von Fehlern entsprechen gerade den üblichen Modifikationsoperationen der Edit-Distanz. Ein Alignment, welches die Anzahl der Fehler minimiert, gibt damit auch die (minimale) Edit-Distanz zwischen $p$ und $t$ an.
+
+Der zweite Ansatz ist die Verwendung von \textit{scoring}. Jeder der vier Fälle bekommt eine bestimmte Punktzahl zugewiesen, die anschließend maximiert wird. Offensichtlich erhält daher der erste Fall eine positive Punktzahl, während die anderen Fälle eine nicht-positive Punktzahl erhalten. Durch die feinere Gewichtung ist dieser Ansatz flexibler als der erste. In unserer aktuellen Implementierung beschränken wir uns der Einfachheit halber dennoch auf den ersten Ansatz.
+
+Die Suche eines optimalen globalen Alignments lässt sich mit Hilfe von dynamischer Programmierung lösen. Für ein Muster $p = p_1 \ldots p_m$ und einen Text $t = t_1 \ldots t_n$ wird eine Matrix $F$ berechnet, wobei $F[i,j]$ die minimale Fehlerzahl eines Alignments zwischen $p_1 \ldots p_i$ und $t_1 \ldots t_j$ enthält. Die Matrix $F$ besitzt $m+1$ Zeilen und $n+1$ Spalten, deren Indizierung bei $0$ beginnt. Die erste Zeile und die erste Spalte werden wie folgt initialisiert:
+
+\begin{align*}
+F[i,0] &:= i \qquad \forall \, 0 \leq i \leq m \\
+F[0,j] &:= j \qquad \forall \, 1 \leq j \leq n
+\end{align*}
+
+Wird ein Sring der Länge $0$ (also der leere String) mit einem String der Länge $i$ aligniert, so ergeben sich zwangsläufig $i$ Insertionen \bzw Deletionen, sodass die Initialisierung korrekt ist. Die Rekursionsgleichung für die dynamische Programmierung besteht aus drei verschiedenen Fällen. 
+
+\[
+F[i,j] = \min \left\{\begin{array}{ll} F[i-1,j-1] &+ \, \chardist{p_i}{t_j}\\ F[i-1,j] &+ \, 1 \\ F[i,j-1] &+ \, 1 \end{array}\right. \mbox{wobei} \: \chardist{u}{v} = \left\{\begin{array}{cl} 0, & \mbox{falls} \, u = v\\ 1, & \mbox{sonst} \end{array}\right.
+\]
+
+Der obere Fall (diagonale Rekursionsrichtung) entspricht dabei einem \textit{match} \bzw einem \textit{mismatch}. Der mittlere Fall (vertikale Rekursionsrichtung) entspricht einer Deletion, d.h. das Alignment enthält hier textseitig eine Lücke. Analog dazu entspricht der dritte Fall (horizontale Rekursionsrichtung) einer Insertion, bei der das Alignment musterseitig eine Lücke enthält. Das Feld $F[m,n]$ enthält die Edit-Distanz zwischen $p$ und $t$. 
+
+Um das genaue Alignment zu erhalten, müssen bei der Berechnung von $F$ zusätzliche Information über die verwendete Rekursion gespeichert werden. In unserer Implementierung enthält jedes Feld von $F$ ein zusätzliches Label, welches die benutzte Rekursionsrichtung angibt. Mit dieser Information lässt sich das konkrete Alignment berechnen, indem die Tabelle von $F[m,n]$ aus rückwärts entlang der Rekursionsrichtung traversiert wird. Üblicherweise wird ein Alignment als Cigar-String (\vgl Abschnitt \ref{sec:data:cigar}) bezüglich des Musters ausgegeben. Dieser lässt sich durch die Rückwärtstraversierung leicht generieren, indem er bei jedem Schritt um das passende Zeichen (für (mis)match, insertion und deletion) erweitert wird.
+
+Für unseren Anwendungsfall Reads und Referenzabschnitte zu alignieren ergibt sich jedoch noch ein Problem: Die vom LSH-Algorithmus zusammengeführten Paare von Reads und Referenzabschnitten passen nur grob zueinander. Der Anfang \bzw das Ende des Reads $p$ muss also nicht notwendigerweise zum Anfang \bzw Ende des Referenzabschnitts $t$ gehören. Folgendes Beispiel zeigt die Problematik:
+
+\begin{beispiel}
+\label{bsp:align:basics:optalign}
+Sei $p := \texttt{ACGAT}$ und $t := \texttt{CGACGATTA}$ und das optimale Alignment: \\
+\texttt{C G A C G A T T A}\\
+\texttt{- - A C G A T - -}
+\end{beispiel}
+
+In diesem Fall ist $p$ ein Substring von $t$, dennoch würde obiger Algorithmus hier insgesamt vier Fehler zählen. Da die Position eines Reads im Referenzgenom beliebig sein kann, würde uns bereits ein optimales Alignment zwischen $p$ und einem Substring von $t$ genügen. Ein solches Alignment wird auch als \textit{semiglobales} Alignment von $p$ an $t$ bezeichnet.
+
+Der bestehende Algorithmus lässt sich leicht auf semiglobale Alignments erweitern. Dazu sind zwei Änderungen nötig:
+
+\begin{enumerate}
+\item Die erste Zeile der Matrix $F$ wird mit Nullen initialisiert. Dadurch kann das eigentliche Alignment von $p$ an jeder Stelle in $t$ beginnen, ohne dass dies als Fehler gewertet wird.
+\item Die minimale Fehlerzahl steht nicht mehr im Feld $F[m,n]$, sondern kann in einem beliebigen Feld der letzten Zeile stehen. Das Alignment von $p$ darf also an beliebiger Stelle in $t$ enden, ohne dass dies vom Algorithmus bestraft wird.
+\end{enumerate}
+
+An der Rückwärtsverfolgung ändert sich prinzipiell nichts. Die folgende Abbildung zeigt die Fehlermatrix $F$ für ein kleines Beispiel.
+
+\begin{figure}[htbp]
+\centering
+	\begin{tikzpicture}[-,>=stealth',auto,node distance=1cm,semithick,bend angle=45,scale=.70]
+				  \tikzstyle{every node}=[text=black,scale=0.80,font=\normalsize]
+				  
+				  \tikzstyle{rim}=[draw=none,font=\bf]
+				  \tikzstyle{inn}=[draw=none]
+				  \tikzstyle{mrk}=[shape=circle,draw=red]
+				  \tikzstyle{mrk2}=[shape=circle,draw=green,dashed]
+				  
+				  \node[] (pt) at (0,0) { };			  
+				  \node[rim] (p0) at (0,-1) {-};
+				  \node[rim] (p1) at (0,-2) {A};
+				  \node[rim] (p2) at (0,-3) {A};
+				  \node[rim] (p3) at (0,-4) {C};
+				  \node[rim] (p4) at (0,-5) {C};
+				  \node[rim] (p5) at (0,-6) {T};
+				  \node[rim] (p6) at (0,-7) {T};
+				  \node[rim] (p7) at (0,-8) {T};
+				  
+				  \node[rim] (t0) at (1,0) {-};
+				  \node[inn] (00) at (1,-1) {0};
+				  \node[inn] (01) at (1,-2) {1};
+				  \node[inn] (02) at (1,-3) {2};
+				  \node[inn] (03) at (1,-4) {3};
+				  \node[inn] (04) at (1,-5) {4};
+				  \node[inn] (05) at (1,-6) {5};
+				  \node[inn] (06) at (1,-7) {6};
+				  \node[inn] (07) at (1,-8) {7};
+				  
+				  \node[rim] (t1) at (2,0) {C};
+				  \node[inn] (10) at (2,-1) {0};
+				  \node[inn] (11) at (2,-2) {1};
+				  \node[inn] (12) at (2,-3) {2};
+				  \node[inn] (13) at (2,-4) {2};
+				  \node[inn] (14) at (2,-5) {3};
+				  \node[inn] (15) at (2,-6) {4};
+				  \node[inn] (16) at (2,-7) {5};
+				  \node[inn] (17) at (2,-8) {6};
+				  
+				  \node[rim] (t2) at (3,0) {G};
+				  \node[inn] (20) at (3,-1) {0};
+				  \node[inn] (21) at (3,-2) {1};
+				  \node[inn] (22) at (3,-3) {2};
+				  \node[inn] (23) at (3,-4) {3};
+				  \node[inn] (24) at (3,-5) {3};
+				  \node[inn] (25) at (3,-6) {4};
+				  \node[inn] (26) at (3,-7) {5};
+				  \node[inn] (27) at (3,-8) {6};
+				  
+				  \node[rim] (t3) at (4,0) {A};
+				  \node[inn] (30) at (4,-1) {0};
+				  \node[mrk] (31) at (4,-2) {0};
+				  \node[inn] (32) at (4,-3) {1};
+				  \node[inn] (33) at (4,-4) {2};
+				  \node[inn] (34) at (4,-5) {3};
+				  \node[inn] (35) at (4,-6) {4};
+				  \node[inn] (36) at (4,-7) {5};
+				  \node[inn] (37) at (4,-8) {6};				  
+				  
+				  \node[rim] (t4) at (5,0) {A};
+				  \node[inn] (40) at (5,-1) {0};
+				  \node[inn] (41) at (5,-2) {0};
+				  \node[mrk] (42) at (5,-3) {0};
+				  \node[inn] (43) at (5,-4) {1};
+				  \node[inn] (44) at (5,-5) {2};
+				  \node[inn] (45) at (5,-6) {3};
+				  \node[inn] (46) at (5,-7) {4};
+				  \node[inn] (47) at (5,-8) {5};				  
+				  
+				  \node[rim] (t5) at (6,0) {C};
+				  \node[inn] (50) at (6,-1) {0};
+				  \node[inn] (51) at (6,-2) {1};
+				  \node[inn] (52) at (6,-3) {1};
+				  \node[mrk] (53) at (6,-4) {0};
+				  \node[mrk] (54) at (6,-5) {1};
+				  \node[inn] (55) at (6,-6) {2};
+				  \node[inn] (56) at (6,-7) {3};
+				  \node[inn] (57) at (6,-8) {4};				  
+				  
+				  \node[rim] (t6) at (7,0) {T};				  
+				  \node[inn] (60) at (7,-1) {0};
+				  \node[inn] (61) at (7,-2) {1};
+				  \node[inn] (62) at (7,-3) {2};
+				  \node[inn] (63) at (7,-4) {1};
+				  \node[inn] (64) at (7,-5) {1};
+				  \node[mrk] (65) at (7,-6) {1};
+				  \node[inn] (66) at (7,-7) {2};
+				  \node[mrk2] (67) at (7,-8) {3};
+				  
+				  \node[rim] (t7) at (8,0) {G};
+				  \node[inn] (70) at (8,-1) {0};
+				  \node[inn] (71) at (8,-2) {1};
+				  \node[inn] (72) at (8,-3) {2};
+				  \node[inn] (73) at (8,-4) {2};
+				  \node[inn] (74) at (8,-5) {2};
+				  \node[inn] (75) at (8,-6) {2};
+				  \node[mrk] (76) at (8,-7) {2};
+				  \node[inn] (77) at (8,-8) {3};
+				  
+				  \node[rim] (t8) at (9,0) {T};
+				  \node[inn] (80) at (9,-1) {0};
+				  \node[inn] (81) at (9,-2) {1};
+				  \node[inn] (82) at (9,-3) {2};
+				  \node[inn] (83) at (9,-4) {3};
+				  \node[inn] (84) at (9,-5) {3};
+				  \node[inn] (85) at (9,-6) {2};
+				  \node[inn] (86) at (9,-7) {2};
+				  \node[mrk] (87) at (9,-8) {2};
+				  
+				  \node[rim] (t9) at (10,0) {C};
+				  \node[inn] (90) at (10,-1) {0};
+				  \node[inn] (91) at (10,-2) {1};
+				  \node[inn] (92) at (10,-3) {2};
+				  \node[inn] (93) at (10,-4) {2};
+				  \node[inn] (94) at (10,-5) {3};
+				  \node[inn] (95) at (10,-6) {3};
+				  \node[inn] (96) at (10,-7) {3};
+				  \node[inn] (97) at (10,-8) {3};
+				  \path
+				        (87) edge[->,red] node[font=\tiny,color=red] {M} (76)
+				        (76) edge[->,red] node[font=\tiny,color=red] {X} (65)
+				        (65) edge[->,red] node[font=\tiny,color=red] {M} (54)
+				        (54) edge[->,red] node[font=\tiny,color=red] {D} (53)
+				        (53) edge[->,red] node[font=\tiny,color=red] {M} (42)
+				        (42) edge[->,red] node[font=\tiny,color=red] {M} (31);
+				  \path
+				        (67) edge[->,dashed,green] node { } (66)
+				        (67) edge[->,dashed,green] node { } (57)
+				        (67) edge[->,dashed,green] node { } (56);
+				        
+	\end{tikzpicture}
+\caption{Beispielberechnung für semiglobales Alignment mit $p := \texttt{AACCTTT}$ und $t:=\texttt{CGAACTGTC}$. Der markierte Pfad gibt das beste semiglobale Alignment an und den Beitrag am Cigar-String an. Dieser lautet hier \texttt{2M1D1M1X1M}, wobei das \texttt{X} für ein mismatch steht. Die grünen Pfeile visualiseren nochmal, auf welche Werte bei der Berechnung eines Eintrags zugegriffen wird.}
+\label{fig:align:basics:semiglobalbeispiel}
+\end{figure}
+
+\section{Erweiterung auf Varianten}
+\label{sec:align:variants}
+\marginpar{Sven}
+
+Wir haben den beschriebenen Algorithmus für semiglobale Alignments erweitert, sodass dieser auch variantentolerant arbeitet. Neben einem Referenzgenom steht für die Alignierung zusätzlich eine VCF-Datei zur Verfügung, die bekannte Varianten des Referenzgenoms enthält. Variantentoleranz bedeutet nun, dass der Algorithmus zusätzlich zum Referenzgenom auch alle Kombinationen der enthaltenen Varianten berücksichtigt. Der Algorithmus berechnet also nicht nur ein optimales Alignment, sondern wählt zusätzlich alle Varianten aus, die das Alignment verbessern, falls sie auf das Referenzgenom angewandt werden. In diesem Abschnitt wird beschrieben, wie der Algorithmus die einzelnen Variantentypen behandelt und wie das konkrete Alignment ausgegeben wird.
+
+\subsection{Behandlung von SNPs}
+\label{sec:align:variants:snp}
+
+SNPs werden getrennt von Indels betrachtet, da sie deutlich einfacher zu verarbeiten sind. Die Idee hierbei ist, dass wir das Referenzgenom und alle Reads zusätzlich in der IUPAC-Kodierung (vgl. Abschnitt \ref{sec:data:iupac}) speichern. Diese verbraucht mit vier Bit pro Basenpaar doppelt so viel Speicher wie die einfache 2-Bit-Kodierung, bietet dafür jedoch die Möglichkeit SNPs zu behandeln ohne die Laufzeit des Algorithmus zu erhöhen.
+
+Vor dem Alignieren müssen alle SNPs in der VCF-Datei gesucht und in den IUPAC-kodierten Referenzstring eingefügt werden. Die Bitkodierung des IUPAC-Alphabets ist so gewählt, dass je eines der vier Bits für eine der vier DNA-Basen steht. Durch eine logische Oder-Operation können zwei IUPAC-Zeichen kombiniert werden, sodass das Ergebnis die Vereinigung der betreffenden Basen ist. Der Referenzstring kann nach diesem Vorgang möglicherweise mehrere Basen an der gleichen Position enthalten. Die IUPAC-Zeichen des Referenzstrings können also jeweils als Menge von Basen aufgefasst werden, sodass die Distanzfunktion \chardist{p_i}{t_j} keine Gleichheit mehr prüfen muss, sondern Inklusion des Read-Zeichens im Referenzgenom-Zeichen. Durch Ausnutzen der Bitkodierung der IUPAC-Zeichen ist dieser Test mithilfe einer einzigen Und-Operation durchführbar, sodass sich die Anzahl durchzuführender Operationen in der Theorie nicht erhöht. Die Verarbeitung der VCF-Datei stellt ein Preprocessing dar und ist unabhängig von der Anzahl zu alignierender Reads.
+
+\subsection{Behandlung von Indels}
+\label{sec:align:variants:indel}
+
+Für Insertionen und Deletionen wird die Rekursionsgleichung des Algorithmus erweitert. Bisher wurde ein Tabelleneintrag in $F$ aus dem darüberliegenden Wert und aus zwei Werten der vorigen Spalte berechnet. Für die Behandlung von Indels werden zusätzliche Werte bei der Rekursion berücksichtigt.
+
+Der einfachere Fall ist eine Deletionsvariante. Angenommen es soll die $j$-te Spalte der Tabelle $F$ berechnet werden und an der Position $j-k$ im Referenzabschnitt $t$ liegt eine Deletion der Länge $k$ vor, d.h. die Zeichen $t_{j-k}, \ldots , t_{j-1}$ würden durch die Deletion entfernt werden. Für die Berechnung eines Eintrags in der $j$-ten Spalte muss der Algorithmus entscheiden, ob das besseres Alignment mit der Originalsequenz oder durch Weglassen der betroffenen Zeichen erreichen lässt. Zusätzlich zur $j-1$-ten Spalte berücksichtigt der Algorithmus dazu die $j-k-1$-te Spalte, also die Spalte vor der Deletionsvariante. Die genaue Formel für den Eintrag $F[i,j+k]$ sieht dabei wie folgt aus:
+
+\[
+F[i,j] = \min \left\{\begin{array}{cl} F[i-1,j-1] &+ \chardist{p_i}{t_j}\\ F[i-1,j] &+ 1 \\ F[i,j-1] &+ 1 \\ F[i-1,j-k-1] &+ \chardist{p_i}{t_j} \\ F[i,j-k-1] &+ 1 \end{array}\right. 
+\]
+
+Die oberen drei Fälle sind identisch zur bisher bekannten Rekursionsgleichung. Die unteren beiden Fälle stehen intuitiv für die Entscheidung des Algorithmus, die Spalten $j-k, \ldots, j-1$ zu \glqq überspringen\grqq. Die Einträge der $j$-ten Spalte werden unabhängig voneinander nach diesem Verfahren berechnet, d.h. die Entscheidung für oder gegen die Variante wird bei jedem Eintrag unabhängig getroffen.
+
+Im Allgemeinen können auch mehrere Deletionsvarianten an der gleichen Position enden. In diesem Fall werden so viele zusätzliche Spalten bei der Berechnung berücksichtigt wie es endende Deletionsvarianten an der entsprechenden Position gibt. Für jede zusätzliche Spalte erhöht sich die Anzahl der Rekursionsfälle um zwei. Da sich der Algorithmus immer lokal für oder gegen eine Variante entscheidet, besteht hier nicht das Problem, dass Anhäufungen von Varianten zu einer kombinatorischen Explosion führen können. Die Laufzeit bleibt linear in der Länge des Referenzabschnitts und der Anzahl der Deletionsvarianten.
+
+Insertionsvarianten werden ähnlich wie Deletionen behandelt. Falls an der Position $j$ eine Insertionsvariante der Länge $k$ mit Insertionssequenz $s$ vorliegt, trifft der Algorithmus bei der Berechnung der $j+1$-Spalte wieder eine lokale Entscheidungen, ob er die Insertion nutzt oder nicht. Während bei Deletionen einfach auf zurückliegenden Spalten zugegriffen werden konnte, müssen bei Insertionen temporär zusätzliche Tabellenspalten berechnet werden. Der Algorithmus führt spekulativ die Berechnung des Alignments mit der Insertionssequenz $s$ fort. Die letzte Spalte der spekulativen Berechnung fließt nun in die Berechnung der eigentlichen $j+1$-ten Spalte ein. Der Prozess wird in Abbildung \ref{fig:align:basics:insertalign} visualisiert.
+
+\begin{figure}[htbp]
+\centering
+	\begin{tikzpicture}[-,>=stealth',auto,node distance=1cm,semithick,bend angle=45,scale=.70]
+				  \tikzstyle{every node}=[text=black,scale=0.80,font=\normalsize]
+				  
+				  \tikzstyle{rim}=[draw=none,font=\bf]
+				  \tikzstyle{inn}=[draw=none]
+				  \tikzstyle{mrk}=[shape=circle,draw=red]
+				  \tikzstyle{mrk2}=[shape=circle,draw=green]
+				  
+				  \node[] (pt) at (0,0) { };			  
+				  \node[rim] (p0) at (0,-1) {-};
+				  \node[rim] (p1) at (0,-2) {A};
+				  \node[rim] (p2) at (0,-3) {A};
+				  \node[rim] (p3) at (0,-4) {C};
+				  \node[rim] (p4) at (0,-5) {C};
+				  \node[rim] (p5) at (0,-6) {T};
+				  \node[rim] (p6) at (0,-7) {T};
+				  \node[rim] (p7) at (0,-8) {T};
+				  
+				  \node[rim] (t0) at (1,0) {-};
+				  \node[inn] (00) at (1,-1) {0};
+				  \node[inn] (01) at (1,-2) {1};
+				  \node[inn] (02) at (1,-3) {2};
+				  \node[inn] (03) at (1,-4) {3};
+				  \node[inn] (04) at (1,-5) {4};
+				  \node[inn] (05) at (1,-6) {5};
+				  \node[inn] (06) at (1,-7) {6};
+				  \node[inn] (07) at (1,-8) {7};
+				  
+				  \node[rim] (t1) at (2,0) {C};
+				  \node[inn] (10) at (2,-1) {0};
+				  \node[inn] (11) at (2,-2) {1};
+				  \node[inn] (12) at (2,-3) {2};
+				  \node[inn] (13) at (2,-4) {2};
+				  \node[inn] (14) at (2,-5) {3};
+				  \node[inn] (15) at (2,-6) {4};
+				  \node[inn] (16) at (2,-7) {5};
+				  \node[inn] (17) at (2,-8) {6};
+				  
+				  \node[rim] (t2) at (3,0) {G};
+				  \node[inn] (20) at (3,-1) {0};
+				  \node[inn] (21) at (3,-2) {1};
+				  \node[inn] (22) at (3,-3) {2};
+				  \node[inn] (23) at (3,-4) {3};
+				  \node[inn] (24) at (3,-5) {3};
+				  \node[inn] (25) at (3,-6) {4};
+				  \node[inn] (26) at (3,-7) {5};
+				  \node[inn] (27) at (3,-8) {6};
+				  
+				  \node[rim] (t3) at (4,0) {A};
+				  \node[inn] (30) at (4,-1) {0};
+				  \node[mrk] (31) at (4,-2) {0};
+				  \node[inn] (32) at (4,-3) {1};
+				  \node[inn] (33) at (4,-4) {2};
+				  \node[inn] (34) at (4,-5) {3};
+				  \node[inn] (35) at (4,-6) {4};
+				  \node[inn] (36) at (4,-7) {5};
+				  \node[inn] (37) at (4,-8) {6};
+				  
+				  \node[rim] (t4) at (5,0) {A};
+				  \node[inn] (40) at (5,-1) {0};
+				  \node[inn] (41) at (5,-2) {0};
+				  \node[mrk] (42) at (5,-3) {0};
+				  \node[inn] (43) at (5,-4) {1};
+				  \node[inn] (44) at (5,-5) {2};
+				  \node[inn] (45) at (5,-6) {3};
+				  \node[inn] (46) at (5,-7) {4};
+				  \node[inn] (47) at (5,-8) {5};
+				  
+				  \node[rim] (t5) at (6,0) {C};
+				  \node[inn] (50) at (6,-1) {0};
+				  \node[inn] (51) at (6,-2) {1};
+				  \node[inn] (52) at (6,-3) {1};
+				  \node[mrk] (53) at (6,-4) {0};
+				  \node[inn] (54) at (6,-5) {1};
+				  \node[inn] (55) at (6,-6) {2};
+				  \node[inn] (56) at (6,-7) {3};
+				  \node[inn] (57) at (6,-8) {4};
+				  
+				  \node[rim] (xt6) at (8,0) {C};
+				  \node[inn] (x60) at (8,-1) {0};
+				  \node[inn] (x61) at (8,-2) {1};
+				  \node[inn] (x62) at (8,-3) {1};
+				  \node[inn] (x63) at (8,-4) {1};
+				  \node[mrk] (x64) at (8,-5) {0};
+				  \node[inn] (x65) at (8,-6) {1};
+				  \node[inn] (x66) at (8,-7) {2};
+				  \node[inn] (x67) at (8,-8) {3};
+				  
+				  \node[rim] (xt7) at (9,0) {T};
+				  \node[inn] (x70) at (9,-1) {0};
+				  \node[inn] (x71) at (9,-2) {1};
+				  \node[inn] (x72) at (9,-3) {1};
+				  \node[inn] (x73) at (9,-4) {1};
+				  \node[inn] (x74) at (9,-5) {1};
+				  \node[mrk] (x75) at (9,-6) {0};
+				  \node[inn] (x76) at (9,-7) {1};
+				  \node[inn] (x77) at (9,-8) {2};
+				  
+				  \node[rim] (t6) at (11,0) {T};				  
+				  \node[inn] (60) at (11,-1) {0};
+				  \node[inn] (61) at (11,-2) {1};
+				  \node[inn] (62) at (11,-3) {2};
+				  \node[inn] (63) at (11,-4) {1};
+				  \node[inn] (64) at (11,-5) {1};
+				  \node[inn] (65) at (11,-6) {1};
+				  \node[mrk] (66) at (11,-7) {0};
+				  \node[mrk2] (67) at (11,-8) {1};
+				  
+				  \node[rim] (t7) at (12,0) {G};
+				  \node[inn] (70) at (12,-1) {0};
+				  \node[inn] (71) at (12,-2) {1};
+				  \node[inn] (72) at (12,-3) {2};
+				  \node[inn] (73) at (12,-4) {2};
+				  \node[inn] (74) at (12,-5) {2};
+				  \node[inn] (75) at (12,-6) {2};
+				  \node[inn] (76) at (12,-7) {1};
+				  \node[mrk] (77) at (12,-8) {1};
+				  
+				  \node[rim] (t8) at (13,0) {T};
+				  \node[inn] (80) at (13,-1) {0};
+				  \node[inn] (81) at (13,-2) {1};
+				  \node[inn] (82) at (13,-3) {2};
+				  \node[inn] (83) at (13,-4) {3};
+				  \node[inn] (84) at (13,-5) {3};
+				  \node[inn] (85) at (13,-6) {2};
+				  \node[inn] (86) at (13,-7) {2};
+				  \node[inn] (87) at (13,-8) {1};
+				  
+				  \node[rim] (t9) at (14,0) {C};
+				  \node[inn] (90) at (14,-1) {0};
+				  \node[inn] (91) at (14,-2) {1};
+				  \node[inn] (92) at (14,-3) {2};
+				  \node[inn] (93) at (14,-4) {2};
+				  \node[inn] (94) at (14,-5) {3};
+				  \node[inn] (95) at (14,-6) {3};
+				  \node[inn] (96) at (14,-7) {3};
+				  \node[inn] (97) at (14,-8) {2};
+				  \path
+				        (77) edge[->,red] node { } (66)
+				        (66) edge[->,red] node { } (x75)
+				        (x75) edge[->,red] node { } (x64)
+				        (x64) edge[->,red] node { } (53)
+				        (53) edge[->,red] node { } (42)
+				        (42) edge[->,red] node { } (31);
+				  \path
+				        (67) edge[->,dashed,green] node { } (66)
+				        (67) edge[->,dashed,green] node { } (x77)
+				        (67) edge[->,dashed,green] node { } (x76)
+				        (67) edge[->,dashed,green,bend left=25] node { } (57)
+				        (67) edge[->,dashed,green] node { } (56);
+				        
+				  \draw[blue,dashed,rounded corners=10] (7.5,0.5) rectangle (9.5,-8.5);
+				        
+	\end{tikzpicture}
+\caption{Erweiterung der Beispielberechnung aus Abbildung \ref{fig:align:basics:semiglobalbeispiel} mit einer zusätzlichen Insertionsvariante zwischen $t_4$ und $t_5$ mit $s = \texttt{CT}$. Die spekulative Berechnung für die Insertion ist blau umrandet. Die grünen Pfeile deuten die Rekursionsfälle an, die sich durch eine Insertionsvariante ergeben.}
+\label{fig:align:basics:insertalign}
+\end{figure}
+
+Da während der Berechnung der Beginn jeder Insertionsvariante und das Ende jeder Deletionsvariante bekannt sein müssen, wird auch für diese Variantentypen die VCF-Datei zuvor durchsucht und die Informationen in einem nach Positionen sortierten Array gespeichert.
+
+\subsection{Backtracing und Ausgabe des Algorithmus}
+\label{sec:align:variants:output}
+
+Bei der Berechnung des semiglobalen Alignments ohne Varianten besteht die Ausgabe aus einem Cigar-String und seiner Startposition im Referenzgenom. Bei der variantentoleranten Version ergibt sich jedoch das Problem, dass der Cigar-String keine Informationen darüber enthält, welche Varianten für das optimale Alignment genutzt wurden. Für eine spätere Visualisierung der Ergebnisse ist das unpraktisch, da sich der modifizierte Referenzstring, an den ein Read aligniert wurde, nur schwer rekonstruieren lässt. Noch schwieriger wird es, wenn ein Alignment innerhalb eines Insertionsstrings beginnt, weil völlig unklar ist, welcher Wert als Startposition für das Alignment angegeben werden soll. Wir haben uns daher entschieden, dass der Algorithmus für jedes Alignment zusätzliche Informationen ausgibt:
+
+\begin{itemize}
+\item Eine Liste aller für das Alignment benutzter Varianten. Dazu muss die VCF-Datei gegebenenfalls so umgeschrieben werden, dass alle Varianten eindeutig indiziert sind.
+\item Falls vorhanden, den Index der Variante, in der das Alignment beginnt.
+\item Beginnt ein Alignment in einer Insertion, wird die Position vor der Insertion als Position im Referenzgenom ausgegeben. Es wird eine zweite Startposition gespeichert, die den Beginn des Alignments innerhalb des Insertionsstrings angibt.
+\end{itemize}
+
+Da das SAM-Format für diese Informationen keine dedizierten Felder hat, nutzen wir dafür das Zusatzfeld, welches im SAM-Format vorgesehen ist. Dadurch bleibt die Datei für andere Readmapper weiterhin lesbar und wir können alle nötigen Informationen aus unserer SAM-Datei rekonstruieren.
+
+Beim Ausfüllen der Alignierungstabelle speichert der Algorithmus ebenfalls neue Informationen ab, damit die Ausgabe wie oben beschrieben erfolgen kann. Die Spalten der normalen Alignierungstabelle werden zusammen mit den spekulativ berechneten Insertionsspalten in einer großen Tabelle gespeichert, sodass jede dieser Spalten intern eindeutig referenzierbar ist. Jeder Tabelleneintrag enthält nicht nur die Information, durch welchen der Rekursionsfälle sein Wert zustande kam, sondern auch einen Spaltenindex, auf den sich der Rekursionsfall bezieht. Werden bspw. bei einer Deletion Zeichen im Referenzgenom übersprungen, so ist der Rechenweg durch den Spaltenindex eindeutig rekonstruierbar.
+
+Jede Spalte enthält außerdem die korrespondierende Position im Referenzgenom, im Falle von Insertionsspalten die Position innerhalb der aktuellen Insertion und den Index der Variante, zu der diese Spalte gehört. Beim Rückwärtsdurchlauf durch die Tabelle, bei dem das Alignment in Form eines Cigar-Strings berechnet wird, können dadurch alle Information bezüglich verwendeter Varianten und der verschiedenen Startposition leicht eingesammelt werden.
+
+\subsection{Laufzeitoptimierung}
+\label{sec:align:variants:optimize}
+\marginpar{Sven}
+
+Mit Hilfe des beschriebenen Algorithmus lassen sich theoretisch optimale Alignments mit einer beliebigen Anzahl von Fehlern berechnen. In der Praxis ist man jedoch häufig nur an Alignments interessiert, die eine gewisse Mindestgüte besitzen, also \zB eine Schranke für die Fehlerzahl nicht überschreiten. Dieser Umstand lässt sich ausnutzen, um die Laufzeit des Algorithmus zu reduzieren. Ist die Fehlerschranke im Verhältnis zur Readlänge sehr klein, müssen viele Spalten gar nicht vollständig berechnet werden, da die Werte so groß sind, dass sie ohnehin nicht mehr relevant für die Lösung sind.
+
+Abbildung \ref{fig:align:basics:errors} zeigt die vorherige Tabelle, wobei hier eine maximale Fehlerschranke von $1$ angenommen wird. Der rot markierte Bereich müsste nicht berechnet werden, da bereits ein Wert von $2$ zu hoch ist und somit für ein optimales Alignment irrelevant. Die übliche Länge von Reads liegt mit aktuellen Technologien bei etwa 100 Basenpaaren, während eine übliche Fehlerschranke bei drei bis fünf Fehlern pro Read liegt. Es ist also zu erwarten, dass sich das Problem in der Praxis noch stärker äußert, als in der Abbildung angedeutet.
+
+\begin{figure}[htbp]
+\centering
+	\begin{tikzpicture}[-,>=stealth',auto,node distance=1cm,semithick,bend angle=45,scale=.70]
+				  \tikzstyle{every node}=[text=black,scale=0.80,font=\normalsize]
+				  
+				  \tikzstyle{rim}=[draw=none,font=\bf]
+				  \tikzstyle{inn}=[draw=none]
+				  \tikzstyle{mrk}=[shape=circle,draw=red]
+				  \tikzstyle{mrk2}=[shape=circle,draw=green]
+				  
+				  \path[fill=red!20!white] (0.5,-3.5) -- (0.5,-8.5) -- (7.5,-8.5) -- (7.5,-7.5) -- (6.5,-7.5) -- (6.5,-6.5) -- (5.5,-6.5) -- (5.5,-5.5) -- (4.5,-5.5) -- (4.5,-4.5) -- (3.5,-4.5) -- (3.5,-3.5) -- (2.5,-3.5) -- (2.5,-4.5) -- (1.5,-4.5) -- (1.5, -3.5);
+				  
+				  \node[] (pt) at (0,0) { };			  
+				  \node[rim] (p0) at (0,-1) {-};
+				  \node[rim] (p1) at (0,-2) {A};
+				  \node[rim] (p2) at (0,-3) {A};
+				  \node[rim] (p3) at (0,-4) {C};
+				  \node[rim] (p4) at (0,-5) {C};
+				  \node[rim] (p5) at (0,-6) {T};
+				  \node[rim] (p6) at (0,-7) {T};
+				  \node[rim] (p7) at (0,-8) {T};
+				  
+				  \node[rim] (t0) at (1,0) {-};
+				  \node[inn] (00) at (1,-1) {0};
+				  \node[inn] (01) at (1,-2) {1};
+				  \node[inn] (02) at (1,-3) {2};
+				  \node[inn] (03) at (1,-4) {3};
+				  \node[inn] (04) at (1,-5) {4};
+				  \node[inn] (05) at (1,-6) {5};
+				  \node[inn] (06) at (1,-7) {6};
+				  \node[inn] (07) at (1,-8) {7};
+				  
+				  \node[rim] (t1) at (2,0) {C};
+				  \node[inn] (10) at (2,-1) {0};
+				  \node[inn] (11) at (2,-2) {1};
+				  \node[inn] (12) at (2,-3) {2};
+				  \node[inn] (13) at (2,-4) {2};
+				  \node[inn] (14) at (2,-5) {3};
+				  \node[inn] (15) at (2,-6) {4};
+				  \node[inn] (16) at (2,-7) {5};
+				  \node[inn] (17) at (2,-8) {6};
+				  
+				  \node[rim] (t2) at (3,0) {G};
+				  \node[inn] (20) at (3,-1) {0};
+				  \node[inn] (21) at (3,-2) {1};
+				  \node[inn] (22) at (3,-3) {2};
+				  \node[inn] (23) at (3,-4) {3};
+				  \node[inn] (24) at (3,-5) {3};
+				  \node[inn] (25) at (3,-6) {4};
+				  \node[inn] (26) at (3,-7) {5};
+				  \node[inn] (27) at (3,-8) {6};
+				  
+				  \node[rim] (t3) at (4,0) {A};
+				  \node[inn] (30) at (4,-1) {0};
+				  \node[inn] (31) at (4,-2) {0};
+				  \node[inn] (32) at (4,-3) {1};
+				  \node[inn] (33) at (4,-4) {2};
+				  \node[inn] (34) at (4,-5) {3};
+				  \node[inn] (35) at (4,-6) {4};
+				  \node[inn] (36) at (4,-7) {5};
+				  \node[inn] (37) at (4,-8) {6};
+				  
+				  \node[rim] (t4) at (5,0) {A};
+				  \node[inn] (40) at (5,-1) {0};
+				  \node[inn] (41) at (5,-2) {0};
+				  \node[inn] (42) at (5,-3) {0};
+				  \node[inn] (43) at (5,-4) {1};
+				  \node[inn] (44) at (5,-5) {2};
+				  \node[inn] (45) at (5,-6) {3};
+				  \node[inn] (46) at (5,-7) {4};
+				  \node[inn] (47) at (5,-8) {5};
+				  
+				  \node[rim] (t5) at (6,0) {C};
+				  \node[inn] (50) at (6,-1) {0};
+				  \node[inn] (51) at (6,-2) {1};
+				  \node[inn] (52) at (6,-3) {1};
+				  \node[inn] (53) at (6,-4) {0};
+				  \node[inn] (54) at (6,-5) {1};
+				  \node[inn] (55) at (6,-6) {2};
+				  \node[inn] (56) at (6,-7) {3};
+				  \node[inn] (57) at (6,-8) {4};
+				  
+				  \node[rim] (xt6) at (7,0) {C};
+				  \node[inn] (x60) at (7,-1) {0};
+				  \node[inn] (x61) at (7,-2) {1};
+				  \node[inn] (x62) at (7,-3) {1};
+				  \node[inn] (x63) at (7,-4) {1};
+				  \node[inn] (x64) at (7,-5) {0};
+				  \node[inn] (x65) at (7,-6) {1};
+				  \node[inn] (x66) at (7,-7) {2};
+				  \node[inn] (x67) at (7,-8) {3};
+				  
+				  \node[rim] (xt7) at (8,0) {T};
+				  \node[inn] (x70) at (8,-1) {0};
+				  \node[inn] (x71) at (8,-2) {1};
+				  \node[inn] (x72) at (8,-3) {1};
+				  \node[inn] (x73) at (8,-4) {1};
+				  \node[inn] (x74) at (8,-5) {1};
+				  \node[inn] (x75) at (8,-6) {0};
+				  \node[inn] (x76) at (8,-7) {1};
+				  \node[inn] (x77) at (8,-8) {2};
+				  
+				  \node[rim] (t6) at (9,0) {T};				  
+				  \node[inn] (60) at (9,-1) {0};
+				  \node[inn] (61) at (9,-2) {1};
+				  \node[inn] (62) at (9,-3) {2};
+				  \node[inn] (63) at (9,-4) {1};
+				  \node[inn] (64) at (9,-5) {1};
+				  \node[inn] (65) at (9,-6) {1};
+				  \node[inn] (66) at (9,-7) {0};
+				  \node[inn] (67) at (9,-8) {1};
+				  
+				  \node[rim] (t7) at (10,0) {G};
+				  \node[inn] (70) at (10,-1) {0};
+				  \node[inn] (71) at (10,-2) {1};
+				  \node[inn] (72) at (10,-3) {2};
+				  \node[inn] (73) at (10,-4) {2};
+				  \node[inn] (74) at (10,-5) {2};
+				  \node[inn] (75) at (10,-6) {2};
+				  \node[inn] (76) at (10,-7) {1};
+				  \node[inn] (77) at (10,-8) {1};
+				  
+				  \node[rim] (t8) at (11,0) {T};
+				  \node[inn] (80) at (11,-1) {0};
+				  \node[inn] (81) at (11,-2) {1};
+				  \node[inn] (82) at (11,-3) {2};
+				  \node[inn] (83) at (11,-4) {3};
+				  \node[inn] (84) at (11,-5) {3};
+				  \node[inn] (85) at (11,-6) {2};
+				  \node[inn] (86) at (11,-7) {2};
+				  \node[inn] (87) at (11,-8) {1};
+				  
+				  \node[rim] (t9) at (12,0) {C};
+				  \node[inn] (90) at (12,-1) {0};
+				  \node[inn] (91) at (12,-2) {1};
+				  \node[inn] (92) at (12,-3) {2};
+				  \node[inn] (93) at (12,-4) {2};
+				  \node[inn] (94) at (12,-5) {3};
+				  \node[inn] (95) at (12,-6) {3};
+				  \node[inn] (96) at (12,-7) {3};
+				  \node[inn] (97) at (12,-8) {2};
+	\end{tikzpicture}
+\caption{Alignierungstabelle aus den vorigen Beispielen. Die rot markierten Felder müssten aufgrund kleinen Fehlerschranke von $1$ gar nicht berechnet werden.}
+\label{fig:align:basics:errors}
+\end{figure}
+
+In \citep{Rahmann2013} wird eine Optimierung beschrieben, nach der die Spalten der Tabelle immer nur bis zu einem bestimmten Index berechnet werden. Dieser Index hängt davon ab, bis zu welcher Zeile die vorherige Spalte noch Werte enthielt, die unterhalb der Fehlerschranke lagen. Das folgende Theorem stellt diesen Zusammenhang her.
+
+\begin{theorem}
+\label{theo:align:variants:optimize}
+Sei $t$ ein Text und $p$ ein zu alignierendes Muster mit maximaler Fehlerschranke $x$. Seien außerdem $n := \card{t}, m := \card{p}$ und $j$ ein Spaltenindex mit $0 < j < n$. Falls $F[i,j-1] > x$ für alle $i \geq k$ gilt, so folgt daraus $F[i,j] > x$ für alle $i > k$.
+
+Falls also die $j-1$-te Spalte ab der $k$-ten Zeile nur Werte enthält, die größer als $x$ sind, so enthält die $j$-te Spalte ab der $k+1$-ten Zeile ebenfalls nur noch Werte größer als $x$.
+\end{theorem}
+
+\begin{beweis}
+Für den Beweis wird ausgenutzt, dass sich zwei benachbarte Tabellenwerte um höchstens $1$ unterscheiden können. Dies lässt sich durch Widerspruch und Fallunterscheidungen leicht zeigen. Aus $F[k,j-1] > t$ folgt daraus $F[k,j] \geq t$. Durch die Rekursionsgleichung des Algorithmus müssen auch alle Einträge unterhalb von $F[k,j]$ größer als $t$ sein, da die Werte der vorigen Spalte größer als $t$ sind.
+\end{beweis}
+
+Für die erste Spalte der Alignierungstabelle ist bereits bekannt, dass ab der $t$-ten Spalte alle Einträge größer als $t$ sind. Unser Algorithmus nutzt nun Theorem \ref{theo:align:variants:optimize}, indem er die Alignierungstabelle spaltenweise berechnet und sich für jede Spalte $j$ einen Wert \lastrow{j} merkt, der die letzte Zeile unterhalb der Fehlerschranke angibt. Um zusätzlich Speicherplatz zu sparen, wird die Tabelle spaltenweise gespeichert, wobei für jede Spalte nur so viel Speicher alloziert wird, wie sie tatsächlich benötigt.
+
+Durch Indel-Varianten kann eine Alignierungsspalte auch mehrere Vorgängerspalten besitzen. Um die Aussage des Theorems anwenden zu können, muss hier das Maximum alle entsprechenden \lastrow{j}-Werte betrachtet werden.

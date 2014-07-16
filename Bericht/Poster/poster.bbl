@@ -1,0 +1,15 @@
+\begin{thebibliography}{LBB12}
+
+\bibitem[AI06]{Adoni2006}
+Alexandr Andoni and Piotr Indyk.
+\newblock Near-optimal hashing algorithms for approximate nearest neighbor in
+  high dimensions.
+\newblock In {\em Foundations of Computer Science, 2006. FOCS'06. 47th Annual
+  IEEE Symposium on}, pages 459--468. IEEE, 2006.
+
+\bibitem[LBB12]{Loh2012}
+Po-Ru Loh, Michael Baym, and Bonnie Berger.
+\newblock Compressive genomics.
+\newblock {\em Nature biotechnology}, 30(7):627--630, 2012.
+
+\end{thebibliography}
