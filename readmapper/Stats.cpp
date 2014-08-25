@@ -1,18 +1,19 @@
-#include <iostream>
-#include <map>
 #include "Stats.h"
 
-void calculateStatistics(VariantStatisticsModule& vsm) {
+#include <iostream>
+#include <map>
+
+void calculateStatistics(VariantStatisticsModule &vsm) {
 
     typedef size_t Pos;
     typedef size_t Count;
     typedef ptrdiff_t Length;
     typedef std::string Chromosome;
 
-    std::vector<std::pair<Pos, Count> >& snps = vsm.snpCountPerPos;
-    std::vector<std::pair<Pos, Count> >& indels = vsm.indelCountPerPos;
-    std::vector<std::pair<Pos, Length> >& indelLength = vsm.indelLen;
-    std::vector<std::pair<Chromosome, Pos> >& startPositions = vsm.chromosomeStartPositions;
+    std::vector<std::pair<Pos, Count>> &snps = vsm.snpCountPerPos;
+    std::vector<std::pair<Pos, Count>> &indels = vsm.indelCountPerPos;
+    std::vector<std::pair<Pos, Length>> &indelLength = vsm.indelLen;
+    std::vector<std::pair<Chromosome, Pos>> &startPositions = vsm.chromosomeStartPositions;
 
     std::cout << "calculateStatistics" << std::endl;
     std::ofstream file("./stats.csv");
@@ -176,7 +177,7 @@ void calculateStatistics(VariantStatisticsModule& vsm) {
                 file,
                 "Number of sequences with variants on all positions;SNPs and Indels \nLength=;Allowed gap length=");
 
-    std::vector<std::pair<Chromosome, Pos> > chromosomeLength(startPositions.size() - 1);
+    std::vector<std::pair<Chromosome, Pos>> chromosomeLength(startPositions.size() - 1);
     for (size_t i = 0; i < chromosomeLength.size(); i++) {
         chromosomeLength[i].first = startPositions[i].first;
         chromosomeLength[i].second = startPositions[i+1].second - startPositions[i].second - vsm.SPACE_BETWEEN_CHROMOSOMS;
@@ -208,7 +209,7 @@ void calculateStatistics(VariantStatisticsModule& vsm) {
 
 
 template <class T>
-void showVector(const std::vector<T>& v) {
+void showVector(const std::vector<T> &v) {
     using namespace std;
     for (size_t i = 0; i < v.size(); i++) {
         cout << i << ": " << v[i] << endl;
@@ -245,7 +246,7 @@ void testStats() {
     auto res4 = histogram_numberOfCombinations(all, 5, 4LL);
     writeHistogramAsCSV(res4, std::cout);
 
-    std::vector<std::pair<unsigned, int> > indelLength;
+    std::vector<std::pair<unsigned, int>> indelLength;
     indelLength.emplace_back(3, 2);
     indelLength.emplace_back(5, 3);
     indelLength.emplace_back(6, 2);
@@ -270,7 +271,7 @@ void testStats() {
     writeHistogramAsCSV(findPositionsWithManyVariants(all, 2, 2, (size_t)0), std::cout); // 5,6
 
 
-    std::vector<std::pair<std::string, size_t> > startPositions;
+    std::vector<std::pair<std::string, size_t>> startPositions;
     startPositions.emplace_back("A", 0);
 
     all.emplace_back(100,1);

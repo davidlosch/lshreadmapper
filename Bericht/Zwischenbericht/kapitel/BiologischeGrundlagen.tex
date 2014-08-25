@@ -359,7 +359,6 @@ Alternative 3'-Spleißstelle
 \marginpar{Jens}
 
 Die auf der DNA enthaltene Information wird an die Nachkommen weitervererbt. Dabei ergibt sich jedoch folgendes Problem: Würden Vater und Mutter jeweils ihre 46 Chromosomen weitervererben, so hätte das Kind 92 Chromosomen. Mit jeder weiteren Generation würde sich die Chromosomenzahl erneut verdoppeln. Aus diesem Grund besitzen Eizellen und Spermien nur einen haploiden Chromosomensatz, der aus 23 Chromosomen besteht, und zwar von jedem Chromosomenpaar genau eines. Alle anderen Zellen unseres Körper sind diploid und besitzen somit 46 Chromosomen. Die Halbierung der Chromosomenzahl findet bei der Meiose statt und soll hier nur kurz erläutert werden soll:
-\newpage
 
 \subsection{Meiose}
 \label{sec:bio:erb:meiose}
@@ -424,6 +423,7 @@ Im Mai 2014 waren in der \textit{dnSNP}, einer Datenbank des amerikanischen \tex
 Da die Veränderungsrate bei $10^{-8}$ Änderungen pro Nucelotid und Generation liegt, sind einzelne Allele sind sehr stabil \citep{Brookes1999} \citep{Li1996}. 
 
 Um die DNA eines Organismus überhaupt erstmal untersuchen zu können, muss diese sequenziert werden. Die Grundideen und verschiedene Arten der Sequenzierung werden im folgenden Abschnitt beschrieben.
+\newpage
 \section{Sequenzierung}
 \label{sec:bio:seq}
 \marginpar{Jan}
@@ -443,11 +443,10 @@ Zur Vorbereitung muss die zu untersuchende DNA in hoher Stückzahl verfügbar se
 	\caption[Visualisierung der Kettenabbruchmethode nach Sanger. (aus \protect\url{http://commons.wikimedia.org/wiki/File:Didesoxy-Methode.svg})]{Visualisierung der Kettenabbruchmethode nach Sanger. (aus \protect\url{http://commons.wikimedia.org/wiki/File:Didesoxy-Methode.svg})}
 	\label{fig:bio:seq:kette}
 \end{figure}
-Dadurch entsteht eine Vielzahl von DNA-Fragmenten mit unterschiedlichen Längen. Das Ablesen der Kodierung erfolgt in einer \textit{Elektrophorese}. Kurze Fragmente wandern, wie in Abbildung \ref{fig:bio:seq:kette} illustriert, am weitesten. Durch die Markierungen des jeweils letzten Nukleotids jedes Fragments lässt sich der genetische Code schrittweise erweitern. 
-
-In der Vergangenheit nutzte man eine radioaktive Markierung der Nukleotide. Um das Gefahrenrisiko zu senken, wurden verschiedene fluoreszierende Markierungen verwendet %was sich vorteilhaft auf die Nutzung auswirkte?. 
+Dadurch entsteht eine Vielzahl von DNA-Fragmenten mit unterschiedlichen Längen. Das Ablesen der Kodierung erfolgt in einer \textit{Elektrophorese}. Kurze Fragmente wandern, wie in Abbildung \ref{fig:bio:seq:kette} illustriert, am weitesten. Durch die Markierungen des jeweils letzten Nukleotids jedes Fragments lässt sich der genetische Code schrittweise erweitern. \\
+In der Vergangenheit nutzte man eine radioaktive Markierung der Nukleotide. Um das Gefahrenrisiko zu senken und dadurch die Nutzung zu vereinfachen, werden nun verschiedene fluoreszierende Markierungen verwendet. 
 Die entstehenden Reads besitzen eine Länge von bis zu 1000 Basenpaaren, dessen Sequenzierung Kosten in Höhe von $\$0{,}50$ pro Tauschend Basenpaaren verursachten. Auch wurde eine hohe Genauigkeit von bis zu $99{,}9 \%$ erzielt \citep{Shendure2008}. Leider ist die Kettenabbruchmethode aufwendig und kostet viel Zeit. Daher wurden neue Sequenziertechniken entwickelt, welche nachfolgend vorgestellt werden.
-\newline
+
 \subsection{Cyclic reversible termination (CRT)}
 \label{sec:bio:seq:crt}
 \marginpar{Jan}
@@ -465,7 +464,8 @@ Diese Art der Sequenzierung nutzt den Umstand aus, dass sich passende DNA-Einzel
 \label{sec:bio:seq:pyro}
 \marginpar{Jan}
 
-Das Grundvorgehen der Pyrosequenzierung ist die Beobachtung einer DNA-Replikation. Zur Vorbereitung werden die folgenden vier Enzyme zugegeben: DNA-Polymerase, ATP-Sulfurylase, Luciferase, Apyrase \citep{Ahmadian2006}. \\
+Das Grundvorgehen der Pyrosequenzierung ist die Beobachtung einer DNA-Replikation. Zur Vorbereitung werden die folgenden vier Enzyme zugegeben: DNA-Polymerase, ATP-Sulfurylase, Luciferase, Apyrase \citep{Ahmadian2006}.
+
 Die eigentliche Sequenzierung läuft nun zyklenweise ab. Die Polymerase sucht ein freies Nukelotid, welches an den komplementären DNA-Strang andocken kann. Iterativ werden jeweils die Desoxyribonukleosidtriphosphate dATP, dCTP, dGTP, dTTP hinzugefügt. Kann ein Nukleotid andocken, wird durch die Polymerase \textit{Pyrophosphat} freigesetzt, welches dann durch ein weiteres Enzym, der ATP-Sulfurylase, zu \textit{Adenosintriphosphat (ATP)} umgewandelt wird. Die Luciferase, welche ursprünglich aus Glühwürmchen extrahiert wurde, katalysiert das ATP zu einem Lichtblitz \citep{Ahmadian2006}. Somit ist klar: Tritt ein Lichtblitz auf, konnte die Polymerase das aktuelle Nukleotid binden und bildet ein weiteres Glied der Sequenz. 
 \begin{figure}[H]
 	\begin{center}
@@ -482,7 +482,7 @@ Nach mehreren Zyklen und der Zugabe der verschiedenen dNTPs lässt sich der gesa
 	\caption{Intensität der Lichtblitze (aus \citet{Metzker2010})}
 	\label{fig:bio:seq:pyro:diagram}
 \end{figure}
-Ein großer Vorteil der Pyrosequenzierung ist die hochparallele Generierung von hunderttausenden Reads mit einer Länge von bis zu 400 Basenpaaren. Auch ist es möglich, dass verschiedene Proben gleichzeitig analysiert werden können, was sich kostensenkend auswirkt \citep{Siqueira2012}. Durch die langen Reads ist eine zuverlässige Erkennung von SNPs möglich, jedoch ist die Fehlerrate bei der Erkennung von Indels hoch, da \textit{Homopolymere}, also Wiederholungsfolgen derselben Base, nur anhand der verschiedenen Intensität der Lichtblitze erkannt werden können \citep{Shendure2008}.
+Ein großer Vorteil der Pyrosequenzierung ist die hochparallele Generierung von hunderttausenden Reads mit einer Länge von bis zu 400 Basenpaaren. Auch ist es möglich, dass verschiedene Proben gleichzeitig analysiert werden können, was sich kostensenkend auswirkt \citep{Siqueira2012}. Durch die langen Reads ist eine zuverlässige Erkennung von SNPs möglich, jedoch ist die Fehlerrate bei der Erkennung von Indels hoch, da \textit{Homopolymere}, also Wiederholungsfolgen derselben Base, nur anhand der verschiedenen Intensität der Lichtblitze erkannt werden können ~\citep{Shendure2008}.
 \subsection{Echtzeit-Sequenzierung}
 \label{sec:bio:seq:realtime}
 \marginpar{Jan}

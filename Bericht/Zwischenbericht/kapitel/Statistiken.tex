@@ -2,23 +2,23 @@
 \label{sec:stats}
 \marginpar{Jens}
 
-In diesem Kapitel werden einige Statistiken über die Verteilung der bekannten Varianten des Humangenoms vorgestellt. Warum wir diese Statistiken erstellt haben, soll der folgende Abschnitt klären:
+In diesem Kapitel werden einige Statistiken über die Verteilung der bekannten Varianten des Humangenoms vorgestellt. Warum wir diese Statistiken erstellt haben, soll der folgende Abschnitt klären.
 
 \section{Motivation}
 \label{sec:stats:motivation}
 \marginpar{Jens}
 Die Aufgabe unserer Projektgruppe ist es, einen Readmapper zu implementieren, der nach Möglichkeit bekannte Varianten direkt unterstützt. Beispielsweise könnte an einer bestimmten Position im Referenzgenom die Base Adenin stehen. Es ist aber bekannt, dass an dieser Position auch häufig Thymin vorkommt. Ein Read, der zu jenem Bereich im Referenzgenom passt, enthält möglicherweise an besagten Stelle diese Variante (also Thymin statt Adenin). Beim Readmapping sollte dieser Basenunterschied zwischen Referenzgenom und Read jedoch nicht als Fehler gewertet, da es sich hierbei um eine häufige Variante handelt. Diese Variantentoleranz wird von vielen Readmappern nicht unterstützt. Da die Anzahl der bekannten Varianten jedoch stetig zunimmt, wäre eine direkte Unterstützung der Varianten beim Readmapping sehr wünschenswert.
 
-Als Grundlage für viele Readmapper werden $q$-Gramme verwendet. Im Allgemeinen ist ein $q$-Gramm ein Teilstring eines Textes bestehend aus $q$ Fragmenten. Fragmente können die Buchstaben eines Textes sein, aber auch Silben oder ganze Wörter, sofern es sich sprachliche Texte handelt. In unserem Fall stellt das Referenzgenom zusammen mit den Reads den Text dar. Die Fragmente sind die vier möglichen Basen (A, C, G und T). Um Reads im Referenzgenom zu finden, wird das Referenzgenom und die Reads in ihre $q$-Gramme zerlegt. Kommen in einem Abschnitt des Referenzgenoms viele $q$-Gramme vor, die auch in einem bestimmten Read vorhanden sind, so ist die Wahrscheinlichkeit hoch, dass dieser Read zu jener Stelle im Referenzgenom passt. Durch die Verwendung der $q$-Gramme erhalten wir eine gewisse Fehlertoleranz: Enthält ein Read einen Sequenzierfehler, so ist nur ein Teil seiner $q$-Gramme davon betroffen. Das heißt, wir können den Read immer noch im Referenzgenom wiederfinden. 
+Als Grundlage für viele Readmapper werden $q$-Gramme verwendet. Im Allgemeinen ist ein $q$-Gramm ein Teilstring eines Textes bestehend aus $q$ Fragmenten. Fragmente können die Buchstaben eines Textes sein, aber auch Silben oder ganze Wörter, sofern es sich sprachliche Texte handelt. In unserem Fall stellt das Referenzgenom zusammen mit den Reads den Text dar. Die Fragmente sind die vier möglichen Basen (A, C, G und T). Um Reads im Referenzgenom zu finden, werden das Referenzgenom und die Reads in ihre $q$-Gramme zerlegt. Kommen in einem Abschnitt des Referenzgenoms viele $q$-Gramme vor, die auch in einem bestimmten Read vorhanden sind, so ist die Wahrscheinlichkeit hoch, dass dieser Read zu jener Stelle im Referenzgenom passt. Durch die Verwendung der $q$-Gramme erhalten wir eine gewisse Fehlertoleranz: Enthält ein Read einen Sequenzierfehler, so ist nur ein Teil seiner $q$-Gramme davon betroffen. Das heißt, wir können den Read immer noch im Referenzgenom wiederfinden.
 
-An dieser Stelle ist es hilfreich, eine Vorstellung über die Größenordnungen zu bekommen: Das Humangenom besteht wie bereit erwähnt aus 3 Milliarden Basenpaaren. Reads der zweiten Sequenzier-Generationen haben in der Regel eine Länge von 101 Basenpaaren. Als $q$-Gramm-Länge werden meist Werte zwischen 8 und 24 verwendet. Hier müssen Experimente zeigen, bei welcher $q$-Gramm-Länge die besten Ergebnisse erzielt werden. Bei dem sehr schnellen Readmapper PEANUT (ParallEl AligNment UTility)
-) \citep{Koester2014} haben die $q$-Gramme beispielsweise eine feste Länge von 16 Basen. Bei sehr langen $q$-Grammen leidet die Fehlertoleranz, da von einem Fehler bereits sehr viele $q$-Gramme betroffen sind. Sind die $q$-Gramme zu kurz, wird der Read möglicherweise an eine falsche Stelle gemappt, da die $q$-Gramme den Read nicht ausreichend repräsentieren. Zur Zeit (2014) sind etwa 60 Millionen Varianten bekannt.
+An dieser Stelle ist es hilfreich, eine Vorstellung über die Größenordnungen zu bekommen: Das Humangenom besteht wie bereit erwähnt aus 3 Milliarden Basenpaaren. Reads der zweiten Sequenzier-Generationen haben in der Regel eine Länge von ca. 100 Basenpaaren. Als $q$-Gramm-Länge werden meist Werte zwischen 8 und 24 verwendet. Hier müssen Experimente zeigen, bei welcher $q$-Gramm-Länge die besten Ergebnisse erzielt werden. Bei dem sehr schnellen Readmapper PEANUT (ParallEl AligNment UTility)
+) \citep{Koester2014} haben die $q$-Gramme beispielsweise eine feste Länge von 16 Basen. Bei sehr langen $q$-Grammen leidet die Fehlertoleranz, da von einem Fehler bereits sehr viele $q$-Gramme betroffen sind. Sind die $q$-Gramme zu kurz, wird der Read möglicherweise an eine falsche Stelle gemappt, da die $q$-Gramme den Read nicht ausreichend repräsentieren.
 
 Damit die Suche hinreichend schnell ist, wird mit den $q$-Grammen des Textes ein Suchindex aufgebaut. Wie dieser genau funktioniert, hängt von dem verwendeten Algorithmus ab und ist an dieser Stelle erstmal nicht wichtig. In Kapitel \ref{sec:lsh} erklären wir detailliert den in unserer Implementierung verwenden Suchindex. 
 
-Wie kann man nun mit Hilfe der $q$-Gramme eine Variantentoleranz erzielen? Die einfachste Möglichkeit ist, die Varianten hinten an der Referenzgenom anzuhängen. Bei SNPs (Veränderung einer Base, vgl. Abschnitt \ref{sec:bio:muta:gen}) kann aber geschickter vorgegangen werden: Liegt an einer Position in einem $q$-Gramm eine Variante vor, so fügt man beide Möglichkeiten zum Such-Index hinzu. Dieses Vorgehen ist jedoch problematisch, wenn viele Varianten in einen $q$-Gramm vorkommen, da man alle Kombinationen zum Suchindex hinzufügen müsste. Im Extremfall gäbe es an allen $q$ Positionen des $q$-Gramms eine Variante, sodass sich $2^q$ Kombinationen ergeben würden. 
+Wie kann man nun mit Hilfe der $q$-Gramme eine Variantentoleranz erzielen? Die einfachste Möglichkeit ist, die Varianten hinten an der Referenzgenom anzuhängen. Bei SNPs (Veränderung einer Base, vgl. Abschnitt \ref{sec:bio:muta:gen}) kann aber geschickter vorgegangen werden: Liegt an einer Position in einem $q$-Gramm eine Variante vor, so fügt man beide Möglichkeiten zum Suchindex hinzu. Dieses Vorgehen ist jedoch problematisch, wenn viele Varianten in einen $q$-Gramm vorkommen, da man alle Kombinationen zum Suchindex hinzufügen müsste. Im Extremfall gäbe es an allen $q$ Positionen des $q$-Gramms je eine Variante, sodass sich $2^q$ Kombinationen ergeben würden.
 
-Hier stellt sich die Frage, wie die Varianten verteilt sind. Kommen die Varianten gleichverteilt vor? Oder gibt es Abschnitte mit sehr vielen Varianten? Im ersten Fall käme eine Variante nur alle 50 Basenpaare. Im letzteren Fall hätten wir das Problem der kombinatorischen Explosion. Um diese Fragen zu beantworten haben wir verschiedene Statistiken zur Verteilung der Varianten erstellt.
+Hier stellt sich die Frage, wie die Varianten verteilt sind. Kommen die Varianten gleichverteilt vor? Oder gibt es Abschnitte mit sehr vielen Varianten? Um diese Fragen zu beantworten haben wir verschiedene Statistiken zur Verteilung der Varianten erstellt.
 
 \section{Durchführung}
 \label{sec:stats:durchfuhrung}
@@ -26,34 +26,39 @@ Hier stellt sich die Frage, wie die Varianten verteilt sind. Kommen die Variante
 
 Als Datengrundlage dienen die von der NCBI (National Center for Biotechnology Information) veröffentlichten Varianten des Humangenoms\footnote{
 \url{ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606_b141_GRCh37p13/VCF/}
-}. Die zur Zeit bekannten Varianten sind das Ergebnis des 1000-Genome-Projekts\footnote{
+}. Die zur Zeit bekannten Varianten sind das Ergebnis des 1000-Genomes-Projekts\footnote{
 \url{http://www.1000genomes.org/}
-}, bei dem die DNA von über 1000 Menschen sequenziert wurde. Für unsere Statistiken haben wir auf zwei Varianten-Dateien zurückgegriffen. Die eine Datei 
-(\glqq 00-All.vcf\grqq )
+}, bei dem die DNA von mehr als 1000 Menschen sequenziert wurde. Für unsere Statistiken haben wir auf zwei Varianten-Dateien zurückgegriffen. Die eine Datei
+(\glqq All.vcf\grqq )
 enthält alle bekannten Varianten, die andere Datei 
-(\glqq common\_all.vcf\grqq )
-nur jene, die bei mindestens 1\% der Individuen vorkommen. Die Menge dieser Varianten wird im folgenden als \emph{häufige Varianten} bezeichnet.
+(\glqq common\_all.vcf\grqq ) nur die im Folgenden als \emph{häufige Varianten} bezeichneten.
+Es handelt sich bei den häufigen Varianten um jene, die bei mindestens 1\% der Individuen in einer der 14 Großpopulationen, zu denen vom 1000-Genomes-Projekt Variantendaten vorliegen\footnote{
+\url{http://www.1000genomes.org/category/frequently-asked-questions/population}
+}, vorkommen.
+Die besagten 1\% müssen hierbei durch mindestens zwei nicht verwandte Personen gebildet werden\footnote{
+\url{http://www.ncbi.nlm.nih.gov/variation/docs/human_variation_vcf/\#common_all}
+}.
 \newpage
 
 \section{Ergebnisse und Auswertung} 
 \label{sec:stats:res}
 \marginpar{Jens}
 
-Im Laufe unserer Projektgruppe haben wir viele verschiedene Statistiken erstellt. Die wichtigen und aussagekräftigsten sollen im Folgenden vorgestellt und analysiert werden: 
+Im Laufe unserer Projektgruppe haben wir viele verschiedene Statistiken erstellt. Die wichtigsten und aussagekräftigsten sollen im Folgenden vorgestellt und analysiert werden.
 
 \subsection{Allgemeine Statistiken}
 \label{sec:stats:res:allg}
 \marginpar{Jens}
 
-Zunächst ein paar allgemeine Informationen über die beiden Varianten-Dateien: Bisher sind etwa 63 Millionen Varianten bekannt, 85\% davon sind SNPs, die restlichen 15\% sind Indels. Circa die Hälfte dieser Varianten (28 Millionen) kommen bei mindestens 1\% der Individuen vor. Bei diesen häufigen Varianten handelt es sich hauptsächlich um SNPs (95\%). Nur 5\% der häufigen Varianten sind Insertionen oder Deletionen. 
+Zunächst ein paar allgemeine Informationen über die beiden Variantendateien: Bisher sind etwa 63 Millionen Varianten bekannt, 85\% davon sind SNPs, die restlichen 15\% sind Indels. Etwa die Hälfte dieser Varianten (28 Millionen) sind häufige Varianten. Bei den Häufigen handelt es sich hauptsächlich um SNPs (95\%). Nur 5\% der häufigen Varianten sind Insertionen oder Deletionen. 
 
-\subsection{Anzahl der SNPs in einem $q$-Gram}
+\subsection{Anzahl der SNPs in einem \texorpdfstring{$q$}{q}-Gramm}
 \label{sec:stats:res:variantsq16}
 \marginpar{Jens}
 
-Im Abschnitt \ref{sec:stats:motivation} kam bereit die Frage auf, wie die Varianten verteilt sind. Insbesondere ist interessant, ob es $q$-Gramme gibt, bei denen an vielen oder fast allen Stellen SNPs vorkommen. Das Diagramm in Abbildung \ref{fig:stats:variantsq16} zeigt, wie häufig $x$ SNPs in einem $q$-Gramm der Länge 16 vorkommen. Die konstante Länge von 16 wurde gewählt, da sich diese bei PEANUT-Algorithmus etabliert hat.
+Im Abschnitt \ref{sec:stats:motivation} kam bereit die Frage auf, wie die Varianten verteilt sind. Insbesondere ist interessant, ob es $q$-Gramme gibt, bei denen an vielen oder fast allen Stellen SNPs vorkommen. Das Diagramm in Abbildung \ref{fig:stats:variantsq16} zeigt, wie häufig $q$-Gramme der Länge 16 mit $x$ SNPs vorkommen. Die konstante Länge von 16 wurde gewählt, da diese beim PEANUT-Algorithmus verwendet wird.
 
-\begin{figure}[h]
+\begin{figure}[htbp]
 \pgfplotsset{footnotesize,width=12cm,compat=1.8}
 %\pgfplotsset{footnotesize,samples=10}
 \begin{center}
@@ -61,8 +66,7 @@ Im Abschnitt \ref{sec:stats:motivation} kam bereit die Frage auf, wie die Varian
 \begin{semilogyaxis}[%restrict y to domain=0:5e10,
 xmin=0,xmax=16,
 xlabel=Anzahl der SNPs,
-ylabel=Häufigkeit,
-title={Anzahl von SNPs in 16-Grammen},
+ylabel=Häufigkeit der 16-Gramme,
 legend pos=outer north east,
 scaled ticks=false,
 ymajorgrids=true,
@@ -77,15 +81,15 @@ legend to name=leg:variantsq16
 \end{tikzpicture}
 \ref*{leg:variantsq16}
 \end{center}
-\caption{Anzahl von SNPs in $q$-Grammen der Länge 16.}
+\caption{Häufigkeit von $16$-Grammen mit entsprechender Anzahl von SNPs.}
 \label{fig:stats:variantsq16}
 \end{figure}
 
-Berücksichtigt man alle Varianten (rote Kurve), so stellt man fest, dass es etwa 5000 $q$-Gramme gibt, bei denen an allen Stellen eine Variante vorkommt. Obwohl die Datei mit den häufigen Varianten nur halb so viele Varianten enthält, sind extreme Variantenhäufungen hier deutlich seltener (siehe blaue Kurve). 16-Gramme mit 11 oder mehr Varianten kommen beispielsweise gar nicht mehr vor.
+Berücksichtigt man alle Varianten (rote Kurve), so stellt man fest, dass es etwa 5000 $16$-Gramme gibt, bei denen an allen Stellen eine Variante vorkommt. Obwohl die Datei mit den häufigen Varianten nur halb so viele Varianten enthält, sind extreme Variantenhäufungen hier deutlich seltener (siehe blaue Kurve). $16$-Gramme mit 11 oder mehr Varianten kommen beispielsweise gar nicht mehr vor.
 
 Man kann also davon ausgehen, dass das Risiko der kombinatorischen Explosion bei ausschließlicher Verwendung der häufigen Varianten deutlich geringer ist als bei Verwendung aller Varianten. 
 
-Das Diagramm \ref{fig:stats:variantsq16} zeigt jedoch nicht wie viele Varianten pro Position vorkommen. Dies ist aber durchaus relevant. Existiert an jeder Position eines 16-Gramms genau eine Variante, so gäbe es bei einem 16-Gramm mit 16 SNPs $2^{16} = 65536$ Kombinationen, die zum Suchindex hinzugefügt werden müssten. Das ist bereits eine große Menge von $q$-Grammen, aber angesichts der Tatsache, dass das Humangenom ohne Varianten circa 3 Milliarden $q$-Gramme enthält, könnte man mit diesen 65535 zusätzlichen $q$-Grammen durchaus noch zurechtkommen. Kann jedoch an jeder Position des 16-Gramms jede Base stehen (d.h. wir haben drei Varianten pro Basenpaar), dann gibt es $4^{16} \approx 4,3 \cdot 10^9$ Kombinationen. Damit würden sich die Menge der $q$-Gramme im Suchindex mehr als verdoppeln\footnote{Dieser Fall ist etwas künstlich, da man an solch eine Position jeden Read mappen könnte.}.
+Das Diagramm \ref{fig:stats:variantsq16} zeigt jedoch nicht wie viele Varianten pro Position vorkommen. Dies ist aber durchaus relevant. Existiert an jeder Position eines $16$-Gramms genau eine Variante, so gäbe es bei einem $16$-Gramm mit 16 SNPs $2^{16} = 65536$ Kombinationen, die zum Suchindex hinzugefügt werden müssten. Das ist bereits eine große Menge von $q$-Grammen, aber angesichts der Tatsache, dass das Humangenom ohne Varianten circa 3 Milliarden $q$-Gramme enthält, könnte man mit diesen 65535 zusätzlichen $q$-Grammen durchaus noch zurechtkommen. Kann jedoch an jeder Position des $16$-Gramms jede Base stehen (d.h. wir haben drei Varianten pro Basenpaar), dann gibt es $4^{16} \approx 4,3 \cdot 10^9$ Kombinationen. Damit würden sich die Menge der $q$-Gramme im Suchindex mehr als verdoppeln\footnote{Dieser Fall ist etwas künstlich, da man an solch eine Position jeden Read mappen könnte.}.
 
 Um genauere Aussagen zu treffen, wäre es daher sinnvoll die tatsächliche Anzahl der Kombinationen zu zählen. %Darüber hinaus wäre es interessant, andere $q$-Grammlängen zu betrachten. 
 
@@ -95,7 +99,7 @@ Um genauere Aussagen zu treffen, wäre es daher sinnvoll die tatsächliche Anzah
 
 Um einen $q$-Gramm-basierten Suchindex variantentolerant zu machen, könnte man alle $q$-Gramme betrachten, die sich aus Kombinationen der verschiedenen bekannten SNPs ergeben. Dabei stellt sich die Frage, wie viele $q$-Gramme dann dem Suchindex hinzugefügt werden müssten. In Diagramm \ref{fig:stats:explosion} ist genau dies dargestellt: Die $y$-Achse zeigt die Anzahl der $q$-Gramme in Abhängigkeit von der $q$-Grammlänge auf der $x$-Achse. 
 
-\begin{figure}[h]
+\begin{figure}[htbp]
 \pgfplotsset{footnotesize,width=12cm,compat=1.8}
 %\pgfplotsset{footnotesize,samples=10}
 \begin{center}
@@ -130,20 +134,20 @@ legend to name=leg:explosion
 \label{fig:stats:explosion}
 \end{figure}
 
-Ohne weitere Beschränkungen (rote Kurve) kommt es zur der bereits oben befürchteten kombinatorischen Explosion: Bei $q=10$ müssten etwa 5 Milliarden $q$-Gramme hinzugefügt werden, also 66\% mehr als ohne Variantenberücksichtigung. Bei $q=11$ hat sich die $q$-Grammlänge bereits verdreifacht. Bei $q=16$ lägen wir bei 2,17 Billionen $q$-Grammen, also circa Faktor 700 mehr. Diese extrem hohen Zahlen werden dadurch verursacht, dass an einigen Stellen sehr viele Varianten vorkommen. Es gibt $16$-Gramme im Referenzgenom bei denen an allen Stellen mindestens zwei SNPs vorkommen. Damit erzeugt solch ein $16$-Gramm über $3^{16} \approx 43 \cdot 10^6$ Varianten. An solch eine Stelle könnte man äußerst viele Reads mappen, indem einfach die passenden Varianten gewählt werden. Es macht also eigentlich keinen Sinn, jede dieser Kombinationen zum Suchindex hinzuzufügen.
+Ohne weitere Beschränkungen (rote Kurve) kommt es zur der bereits oben befürchteten kombinatorischen Explosion: Bei $q=10$ müssten etwa 5 Milliarden $q$-Gramme hinzugefügt werden, also 66\% mehr als ohne Variantenberücksichtigung. Bei $q=11$ hat sich die $q$-Grammanzahl bereits verdreifacht. Bei $q=16$ lägen wir bei 2,17 Billionen $q$-Grammen, also circa Faktor 700 mehr. Diese extrem hohen Zahlen werden dadurch verursacht, dass an einigen Stellen sehr viele Varianten vorkommen. Es gibt $16$-Gramme im Referenzgenom bei denen an allen Stellen mindestens zwei SNPs vorkommen. Damit erzeugt solch ein $16$-Gramm über $3^{16} \approx 43 \cdot 10^6$ Varianten. An solch eine Stelle könnte man äußerst viele Reads mappen, indem einfach die passenden Varianten gewählt werden. Es macht also eigentlich keinen Sinn, jede dieser Kombinationen zum Suchindex hinzuzufügen.
 
 Aus diesem Grund kamen wir auf die Idee, die Anzahl der Kombinationen pro $q$-Gramm im Genom zu beschränken. Die blaue Kurve zeigt das Ergebnis bei einer Beschränkung (Limit) von 65536 Kombinationen. Gibt es $q$-Gramme mit mehr Kombinationen, würde man nur 65536 von diesen zum Suchindex hinzufügen. Obwohl dieser Wert relativ groß ist, kann dadurch die kombinatorische Explosion vermieden werden. Welche Kombinationen dabei verwendet werden, ist an dieser Stelle nicht wichtig, aber durchaus eine interessante Frage. Bei $q=16$ erhalten wir etwa 6 Milliarden $q$-Gramme, also doppelt so viel wie ohne Berücksichtigung der Varianten. Dieser Wert ist gut beherrschbar. Reduziert man das Limit weiter auf 16, ergeben sich etwa 4 Milliarden $q$-Gramme, also nochmal deutlich weniger.
 
 Besonders interessant ist die schwarze Kurve, bei der nur die häufigen Varianten berücksichtigt wurden. Bei $16$-Grammen erhalten wird gerade einmal 3,5 Milliarden Kombinationen, obwohl es keine Beschränkung der Anzahl der Kombinationen in einem $q$-Gramm gibt. 
-Wenn also nur die häufigen Varianten berücksichtigt werden, kann auf die Implementierung eines Limit verzichtet werden, da sich die Gesamtanzahl der $q$-Gramme im Suchindex nicht wesentlich erhöht. Trotzdem könnte eine Beschränkung der Kombinationsanzahl sinnvoll sein: Treten viele Varianten in einen $q$-Gramm auf, so können deutlich mehr Reads an diese Position gemappt werden als an Stellen des Humangenoms an denen keine Varianten vorkommen. Das heißt variantenreiche Stellen werden beim Readmapping bevorzugt, wenn starke Variantenhäufungen vorkommen.
+Wenn also nur die häufigen Varianten berücksichtigt werden, kann auf die Implementierung eines Limit verzichtet werden, da sich die Gesamtanzahl der $q$-Gramme im Suchindex nicht wesentlich erhöht. Trotzdem könnte eine Beschränkung der Kombinationsanzahl sinnvoll sein: Treten viele Varianten in einen $q$-Gramm auf, so können deutlich mehr Reads an diese Position gemappt werden als an Stellen des Humangenoms an denen weniger Varianten vorkommen. Das heißt variantenreiche Stellen werden beim Readmapping bevorzugt, wenn starke Variantenhäufungen vorkommen.
 
 \subsection{Länge von Sequenzen mit vielen Varianten}
 \label{sec:stats:res:nogapseq}
 \marginpar{Jens}
 
-Bisher haben wir uns nur mit der Verteilung von SNPs beschäftigt. Im folgenden betrachten wir die Verteilung aller Varianten, also SNPs und Indels. Das Diagramm in Abbildung \ref{fig:stats:nogapseq} zeigt die Häufigkeit von Sequenzen bestimmter Länge, bei denen an allen Positionen Varianten vorkommen. Auf der x-Achse ist die Länge der Variantensequenz aufgetragen und auf der y-Achse die Häufigkeit in der jeweiligen Varianten-Datei. Bei der Berechnung des Diagramms wurden ab einer Länge von 12 Basenpaaren mehrere Werte auf der x-Achse zusammengefasst, um eine Glättung der Kurve zu erzielen. Dem entsprechend können auch Häufigkeiten kleiner als 1 auftreten. Beispielsweise hat die rote Kurve im Bereich von 90 bis 100 Basenpaaren einen y-Wert von etwa 0,5. Dementsprechend gibt es $0{,}5 \cdot (100 - 90) = 5$ Sequenzen mit einer Länge zwischen 90 und 100 Basenpaaren, bei denen an allen Positionen Varianten vorkommen können. Bei den beiden roten Kurven wurden als Datengrundlage alle Varianten verwendet, bei den beiden blauen Kurven nur die häufigen Varianten. Bei den gestrichelten Kurven darf zwischen den Varianten eine Lücke von maximal vier variantenlosen Positionen des Referenzgenoms vorkommen, ohne dass dies als neue Variantensequenz gezählt wird. Die x-Achse zeigt dabei nicht die Länge der Variantensequenz, sondern die Anzahl der Positionen, an denen Varianten vorkommen können.
+Bisher haben wir uns nur mit der Verteilung von SNPs beschäftigt. Im Folgenden betrachten wir die Verteilung aller Varianten, also SNPs und Indels. Das Diagramm in Abbildung \ref{fig:stats:nogapseq} zeigt die Häufigkeit von Sequenzen bestimmter Länge, bei denen an allen Positionen Varianten vorkommen. Auf der x-Achse ist die Länge der Variantensequenz aufgetragen und auf der y-Achse die Häufigkeit in der jeweiligen Variantendatei. Bei der Berechnung des Diagramms wurden ab einer Länge von 12 Basenpaaren mehrere Werte auf der x-Achse zusammengefasst, um eine Glättung der Kurve zu erzielen. Dem entsprechend können auch Häufigkeiten kleiner als 1 auftreten. Beispielsweise hat die rote Kurve im Bereich von 90 bis 100 Basenpaaren einen y-Wert von etwa 0,5. Dementsprechend gibt es $0{,}5 \cdot (100 - 90) = 5$ Sequenzen mit einer Länge zwischen 90 und 100 Basenpaaren, bei denen an allen Positionen Varianten vorkommen können. Bei den beiden roten Kurven wurden als Datengrundlage alle Varianten verwendet, bei den beiden blauen Kurven nur die häufigen Varianten. Bei den gestrichelten Kurven darf zwischen den Varianten eine Lücke von maximal vier variantenlosen Positionen des Referenzgenoms vorkommen, ohne dass dies als neue Variantensequenz gezählt wird. Die x-Achse zeigt dabei nicht die Länge der Variantensequenz, sondern die Anzahl der Positionen, an denen Varianten vorkommen können.
 
-\begin{figure}[h]
+\begin{figure}[htbp]
 \pgfplotsset{footnotesize,width=12cm,compat=1.8}
 %\pgfplotsset{footnotesize,samples=10}
 \begin{center}
@@ -178,13 +182,13 @@ legend to name=leg:nogapseq
 \label{fig:stats:nogapseq}
 \end{figure}
 
-Wie auch im vorherigen Abschnitt fällt auf, dass starke Variantenhäufungen nur bei Verwendung aller bekannten Varianten vorkommen. Unter den häufigen Varianten besteht die längste lückenlose Variantensequenz gerade mal aus acht Basenpaaren. Im Gegensatz dazu gibt es bei Berücksichtigung aller Varianten noch Fälle mit 100 und mehr aufeinander folgenden Positionen, bei denen überall bekannte Varianten existieren. Selbst wenn man eine Lücke von bis zu vier variantenlosen Positionen zulässt, erhöht sich die Variantenanzahl der längsten Variantensequenz unter den häufigen Varianten gerade einmal auf 15. 
+Wie auch im vorherigen Abschnitt fällt auf, dass starke Variantenhäufungen nur bei Verwendung aller bekannten Varianten vorkommen. Unter den häufigen Varianten besteht die längste lückenlose Variantensequenz gerade mal aus acht Basenpaaren. Im Gegensatz dazu gibt es bei Berücksichtigung aller Varianten noch Fälle mit 100 und mehr aufeinander folgenden Positionen, bei denen überall bekannte Varianten existieren. Selbst wenn man eine Lücke von bis zu vier variantenlosen Positionen zulässt, erhöht sich die Variantenanzahl der längsten Sequenz unter den häufigen Varianten gerade einmal auf 15. 
 
 Das Diagramm zeigt nur Variantensequenzen mit einer Länge von maximal 300 Positionen. Ein Blick auf die Rohdaten zeigt aber, dass es sogar eine lückenlose Variantensequenz mit einer Länge zwischen 334 und 368 Positionen im Referenzgenom gibt. Lässt man eine Lücke von vier variantenlosen Positionen zu, ergibt sich sogar noch ein Eintrag bei über 5000 Varianten. 
 
-Wir können also festhalten, dass es Stellen im Humangenom gibt, die bei den einzelnen Individuen sehr unterschiedlich aussehen. Unter den häufigen Varianten, die bei mindestens 1\% der Menschen existieren, kommen solche starken Variantenhäufungen nicht vor. Wir hatten bereits erwähnt, dass beim Zuordnen eines Reads zu einer ungefähren Position im Humangenom die Verwendung der häufigen Varianten sinnvoll ist. 
+Wir können also festhalten, dass es Stellen im Humangenom gibt, die bei den einzelnen Individuen sehr unterschiedlich aussehen. Unter den häufigen Varianten kommen solche starken Variantenhäufungen nicht vor. Wir hatten bereits erwähnt, dass beim Zuordnen eines Reads zu einer ungefähren Position im Humangenom die Verwendung der häufigen Varianten sinnvoll ist.
 
-Auch bei der Berechnung des exakten Alignments (siehe Kapitel \ref{sec:align}) eines Reads an das Humangenom macht es Sinn, nur die häufigen Varianten zu verwenden. Denn an einer sehr variantenreichen Stelle würde das Alignment sonst vermutlich Variantenkombinationen verwenden, die bei keinem Individuum vorkommen. Alternativ könnte man auch dynamisch entscheiden, welche Varianten-Datei verwendet wird. Liegt an jener Stelle eine starke Variantenhäufung vor, so verwendet man nur die häufigen Varianten für das Alignment. Liegen nur wenige Varianten an jener Stelle vor, kann man auch gefahrlos auf alle Varianten zurückgreifen.
+Auch bei der Berechnung des exakten Alignments (siehe Kapitel \ref{sec:align}) eines Reads an das Humangenom macht es Sinn, nur die häufigen Varianten zu verwenden. Denn an einer sehr variantenreichen Stelle würde das Alignment sonst vermutlich Variantenkombinationen verwenden, die bei keinem Individuum vorkommen. Alternativ könnte man auch dynamisch entscheiden, welche Variantendatei verwendet wird. Liegt an jener Stelle eine starke Variantenhäufung vor, so verwendet man nur die häufigen Varianten für das Alignment. Liegen nur wenige Varianten an jener Stelle vor, kann man auch gefahrlos auf alle Varianten zurückgreifen.
 
 \subsection{Variantenhäufungen}
 \label{sec:stats:res:manyvariants}
@@ -270,9 +274,9 @@ legend entries={SNPs, Indels},
 \label{sec:stats:res:indellength}
 \marginpar{Jens}
 
-Bisher haben wir uns nur damit beschäftigt, wie die Varianten verteilt sind. Im folgenden wollen wir einen genaueren Blick speziell auf Indels werfen. Diagramm \ref{fig:stats:indellength} zeigt die Länge von Insertionen und Deletionen. Auf der x-Achse ist die Anzahl der hinzugefügten Basenpaare (positive Werte) bzw. der gelöschten Basenpaare (negative Werte) aufgetragen. Die y-Achse zeigt, wie häufig Indels genau dieser Länge in der jeweiligen Varianten-Datei existieren. Bei der roten Kurve wurden alle Varianten berücksichtigt, bei der blauen nur die häufigen.
+Bisher haben wir uns nur damit beschäftigt, wie die Varianten verteilt sind. Im Folgenden wollen wir einen genaueren Blick speziell auf Indels werfen. Diagramm \ref{fig:stats:indellength} zeigt die Länge von Insertionen und Deletionen. Auf der x-Achse ist die Anzahl der hinzugefügten Basenpaare (positive Werte) bzw. der gelöschten Basenpaare (negative Werte) aufgetragen. Die y-Achse zeigt, wie häufig Indels genau dieser Länge in der jeweiligen Variantendatei existieren. Bei der roten Kurve wurden alle Varianten berücksichtigt, bei der blauen nur die häufigen.
 
-\begin{figure}[h]
+\begin{figure}[htbp]
 \pgfplotsset{footnotesize,width=12cm,compat=1.8}
 %\pgfplotsset{footnotesize,samples=10}
 \begin{center}
@@ -306,15 +310,14 @@ legend to name=leg:indellength
 
 \end{figure}
 
-Unter den bekannten Varianten gibt es insgesamt 4,8 Millionen Deletionen und 4,1 Millionen Insertionen. Bei den häufigen Indels ergibt sich ein Verhältnis von 0,87 Millionen Deletionen zu 0,65 Millionen Insertionen. Das heißt bei beiden Varianten-Dateien sind Deletionen geringfügig häufiger als Insertionen. Bei circa jeder zweiten Indel-Variante wird nur ein Basenpaar hinzugefügt oder gelöscht; die meisten Indels sind also sehr kurz. Das Diagramm zeigt nur die Deletionen und Insertionen, bei der höchstens 250 Basenpaare gelöscht bzw. eingefügt werden. Die längsten Insertionen in der Varianten-Datei sind mit maximal 252 Basenpaaren tatsächlich kaum länger. Es gibt allerdings erheblich längere Deletionen von maximal 998 Basenpaaren. Insgesamt liegen etwa 2000 Deletionen außerhalb der x-Achse. Dieser Bereich wurde im Diagramm nicht dargestellt, damit der interessante, mittlere Teil deutlicher zu erkennen ist. Darüber hinaus ist der Bereich von -1000 bis -250 auch stark verrauscht, sodass man nicht viel erkennen würde.
+Unter den bekannten Varianten gibt es insgesamt 4,8 Millionen Deletionen und 4,1 Millionen Insertionen. Bei den häufigen Indels ergibt sich ein Verhältnis von 0,87 Millionen Deletionen zu 0,65 Millionen Insertionen. Das heißt bei beiden Varianten-Dateien sind Deletionen geringfügig häufiger als Insertionen. Bei circa jeder zweiten Indel-Variante wird nur ein Basenpaar hinzugefügt oder gelöscht; die meisten Indels sind also sehr kurz. Das Diagramm zeigt nur die Deletionen und Insertionen, bei der höchstens 250 Basenpaare gelöscht bzw. eingefügt werden. Die längsten Insertionen sind mit maximal 252 Basenpaaren tatsächlich kaum länger. Es gibt allerdings erheblich längere Deletionen von bis zu 998 Basenpaaren. Insgesamt liegen etwa 2000 Deletionen außerhalb der x-Achse. Dieser Bereich wurde im Diagramm nicht dargestellt, damit der interessante, mittlere Teil deutlicher zu erkennen ist. Darüber hinaus ist der Bereich von -1000 bis -250 auch stark verrauscht, sodass man nicht viel erkennen würde.
 
-Da es Insertionen gibt, bei denen mehr als 100 Basenpaare hinzugefügt werden, kann es vorkommen, dass ein Read ausschließlich in einer Insertion zu finden ist. Allerdings ist dies recht selten: Unter allen bekannten Indels gibt es circa 1000 solcher Fälle, unter den häufigen Varianten sogar nur sechs. Vergleicht man dies mit den bekannten Deletionen, stellt man fest, dass lange Deletionen etwa doppelt so häufig sind wie lange Insertionen. Dies gilt aber nur für die große Varianten-Datei. Unter den häufigen Varianten werden maximal 44 Basenpaare gelöscht, aber bis zu 167 Basenpaare hinzugefügt. Im Regelfall sind aber die Insertionen der häufigen Varianten kürzer als 50 Basenpaare -- es gibt lediglich 47 Ausnahmen.
-
+Da es Insertionen gibt, bei denen mehr als 100 Basenpaare hinzugefügt werden, kann es vorkommen, dass ein Read ausschließlich in einer Insertion zu finden ist. Allerdings ist dies recht selten: Unter allen bekannten Indels gibt es circa 1000 solcher Fälle, unter den häufigen Varianten sogar nur sechs. Vergleicht man dies mit den bekannten Deletionen, stellt man fest, dass lange Deletionen etwa doppelt so häufig sind wie lange Insertionen. Dies gilt aber nur unter Berücksichtigung aller Varianten. Unter den häufigen Varianten werden maximal 44 Basenpaare gelöscht, aber bis zu 167 Basenpaare hinzugefügt. Im Regelfall sind aber die Insertionen der häufigen Varianten kürzer als 50 Basenpaare -- es gibt lediglich 47 Ausnahmen.
 \section{Fazit}
 \marginpar{Jens}
 
-Primäres Ziel der Statistiken war es, mehr über die Verteilung der Varianten herauszufinden. Wir haben festgestellt, dass teilweise extreme Variantenhäufungen auftreten. Der in Abschnitt \ref{sec:stats:res:manyvariants} gezeigte, 200 Basenpaare lange Ausschnitt des Humangenoms hatte an jeder Position mindestens eine Variante, meist aber eher zwei bis drei. Alle SNP-Kombinationen innerhalb eines $q$-Gramms zum Suchindex hinzuzufügen, ist daher nicht praktikabel. Eine Lösungsmöglichkeit wäre, nur eine beschränkte Anzahl von Kombinationen eines $q$-Gramms in den Index einzufügen. Wählt man dieses Limit hinreichend klein, steigt die Gesamtzahl der $q$-Gramme im Suchindex nur geringfügig an. Deutlich besser ist aber, nur die häufigen Varianten zu berücksichtigen, die bei mindestens 1\% der Individuen vorkommen. Obwohl diese Datei immer noch viele Varianten enthält (nämlich mit 28 Millionen etwa halb so viele wie die große Varianten-Datei), treten keine extremen Variantenhäufungen mehr auf. Eine Beschränkung der Kombinationsanzahl ist hier nicht notwendig.
+Primäres Ziel der Statistiken war es, mehr über die Verteilung der Varianten herauszufinden. Wir haben festgestellt, dass teilweise extreme Variantenhäufungen auftreten. Der in Abschnitt \ref{sec:stats:res:manyvariants} gezeigte, 200 Basenpaare lange Ausschnitt des Humangenoms hatte an jeder Position mindestens eine Variante, meist aber eher zwei bis drei. Alle SNP-Kombinationen innerhalb eines $q$-Gramms zum Suchindex hinzuzufügen, ist daher nicht praktikabel. Eine Lösungsmöglichkeit wäre, nur eine beschränkte Anzahl von Kombinationen eines $q$-Gramms in den Index einzufügen. Wählt man dieses Limit hinreichend klein, steigt die Gesamtzahl der $q$-Gramme im Suchindex nur geringfügig an. Deutlich besser ist aber, nur die häufigen Varianten zu berücksichtigen, die bei mindestens 1\% der Individuen einer Großpopulation vorkommen. Obwohl diese Datei immer noch viele Varianten enthält, treten keine extremen Variantenhäufungen mehr auf. Eine Beschränkung der Kombinationsanzahl ist hier nicht notwendig.
 
-In Abschnitt \ref{sec:stats:res:indellength} haben wir die Länge von Indels genauer analysiert. Es kann vorkommen, dass ein Read ausschließlich in einer Insertion zu finden ist. Berücksichtigt man aber nur die häufigen Varianten ist dieser Fall äußerst selten. Unter den bekannten Varianten gibt es sehr lange Deletionen von fast 1000 Basenpaaren. Unter den häufigen Indels werden bei Deletionen stets weniger als 50 Basenpaare gelöscht.
+In Abschnitt \ref{sec:stats:res:indellength} haben wir die Länge von Indels genauer analysiert. Es kann vorkommen, dass ein Read ausschließlich in einer Insertion zu finden ist. Berücksichtigt man aber nur die häufigen Varianten ist dieser Fall äußerst selten. Unter allen bekannten Varianten gibt es sehr lange Deletionen von fast 1000 Basenpaaren. Unter den häufigen Indels werden bei Deletionen stets weniger als 50 Basenpaare gelöscht.
 
-Zusammenfassend kann man sagen, dass sich das Erstellen der Statistiken gelohnt hat. Die gewonnenen Erkenntnisse waren in der Wissenschaft möglicherweise schon bekannt, aber unsere Projektgruppe hat durch die Statistiken einen genaueren Einblick in die Struktur der Varianten bekommen. Dadurch konnten wir entscheiden, welche Algorithmen wir wie implementieren wollen.
+Zusammenfassend kann man sagen, dass wir durch Erstellung der Statistiken einen genaueren Einblick in die Struktur der Varianten bekommen haben. Dadurch konnten wir entscheiden, welche Algorithmen wir wie implementieren wollen.

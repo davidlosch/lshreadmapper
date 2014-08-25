@@ -1,24 +1,26 @@
-#ifndef PG583_ALIGNMENT_H
-#define PG583_ALIGNMENT_H
+#ifndef PG583_ALIGN_ALIGNMENT_H
+#define PG583_ALIGN_ALIGNMENT_H
 
-#include "Variant.h"
 #include "types.h"
 
-#include <vector>
 #include <string>
+#include <vector>
 #include <set>
 #include <functional>
+#include <stddef.h>
+
+class Variant;
 
 class Alignment {
 public:
     Alignment();
     std::string getCigar();
     ReferenceString getAlignmentString();
-    const std::set<std::reference_wrapper<const Variant>> &getUsedVariants();
+    const std::set<std::reference_wrapper<const Variant>>& getUsedVariants();
     size_t getPosition();
-    const Variant &getStartVariant();
+    const Variant& getStartVariant();
     int getStartOffset();
-    int getErrorCount();
+    size_t getErrorCount();
     void addCigarChar(char c);
     void addAlignmentChar(ReferenceChar c);
     void addUsedVariant(const Variant &var);
@@ -39,7 +41,7 @@ private:
     std::reference_wrapper<const Variant> startVariant;
     // the position in this variant
     int startOffset;
-    int errorCount;
+    size_t errorCount;
     bool cigarInvalid;
     bool alignmentStringInvalid;
     std::string reversedCigar;
@@ -49,4 +51,4 @@ private:
     void flush();
 };
 
-#endif // PG583_ALIGNMENT_H
+#endif // PG583_ALIGN_ALIGNMENT_H

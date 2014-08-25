@@ -24,27 +24,29 @@ LIBS += -lz
 INCLUDEPATH += vendor/seqan/include
 
 SOURCES += main.cpp \
-    DocumentSet.cpp \
-    IndexerModule.cpp \
-    MapperModule.cpp \
-    SimpleMapperModule.cpp \
-    VariantStatisticsModule.cpp \
     Stats.cpp \
     align/BacktracingColumn.cpp \
     align/BacktracingMatrix.cpp \
     align/SemiGlobalAligner.cpp \
     align/Variant.cpp \
     align/VariantIndex.cpp \
-    AlignmentTestModule.cpp \
     align/Alignment.cpp \
-    IupacString.cpp \
-    DocumentSetTest.cpp \
     io/ReferenceReader.cpp \
     Logger.cpp \
     io/VariantsReader.cpp \
     Chromosome.cpp \
-    Test.cpp \
-    LSH.cpp
+    module/AlignmentTestModule.cpp \
+    map/DocumentSet.cpp \
+    test/DocumentSetTest.cpp \
+    module/IndexerModule.cpp \
+    map/LSH.cpp \
+    test/SemiGlobalAlignerTest.cpp \
+    module/VariantStatisticsModule.cpp \
+    module/ApplicationModule.cpp \
+    module/ModuleOptions.cpp \
+    module/MappingOptions.cpp \
+    io/IndexFile.cpp \
+    module/MapperModule.cpp
 
 HEADERS += \
     vendor/seqan/include/seqan/align/align_base.h \
@@ -654,28 +656,29 @@ HEADERS += \
     vendor/seqan/include/seqan/system.h \
     vendor/seqan/include/seqan/vcf_io.h \
     vendor/seqan/include/seqan/version.h \
-    DocumentSet.h \
     Timer.h \
-    ApplicationModule.h \
-    IndexerModule.h \
-    MapperModule.h \
-    SimpleMapperModule.h \
-    VariantStatisticsModule.h \
     Stats.h \
     align/BacktracingColumn.h \
     align/BacktracingMatrix.h \
     align/SemiGlobalAligner.h \
     align/Variant.h \
     align/VariantIndex.h \
-    AlignmentTestModule.h \
     align/Alignment.h \
-    IupacString.h \
-    DocumentSetTest.h \
     types.h \
     io/ReferenceReader.h \
     Logger.h \
     io/VariantsReader.h \
     Chromosome.h \
-    Test.h \
-    LSH.h
+    module/VariantStatisticsModule.h \
+    module/AlignmentTestModule.h \
+    module/ApplicationModule.h \
+    map/DocumentSet.h \
+    test/DocumentSetTest.h \
+    module/IndexerModule.h \
+    map/LSH.h \
+    test/SemiGlobalAlignerTest.h \
+    module/ModuleOptions.h \
+    module/MappingOptions.h \
+    io/IndexFile.h \
+    module/MapperModule.h
 

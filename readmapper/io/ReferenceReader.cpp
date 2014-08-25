@@ -1,5 +1,7 @@
 #include "io/ReferenceReader.h"
+#include "Chromosome.h"
 #include "Logger.h"
+#include "types.h"
 
 #include <seqan/sequence.h>
 #include <seqan/seq_io.h>
@@ -13,14 +15,14 @@ ReferenceReader::ReferenceReader(std::vector<Chromosome> &chromosomes,
 int ReferenceReader::readReferences(const std::vector<std::string> &referenceFiles) {
     logger.info() << "FASTA: Reading reference files." << std::endl;
     for (size_t i = 0; i < chromosomes.size(); ++i) {
-        chromosomeNameToIndex[chromosomes[i].name] = i;
+        chromosomeNameToIndex[Chromosome::generateName(chromosomes[i].id)] = i;
     }
     for (auto &referenceFile : referenceFiles) {
         readReferenceFile(referenceFile);
     }
-    auto &info = logger.info() << "FASTA: List of read chromosomes in reference: ";
+    auto &info = logger.info() << "FASTA: List of chromosomes in reference: ";
     for (auto &chromosome : chromosomes) {
-        info << '"' << chromosome.name << '"' << ' ';
+        info << '"' << Chromosome::generateName(chromosome.id) << '"' << ' ';
     }
     info << std::endl;
     return 0;
@@ -35,43 +37,45 @@ int ReferenceReader::readReferenceFile(const std::string &referenceFile) {
     }
     size_t recordCounter = 0;
     while (!seqan::atEnd(refStream)) {
+        if (chromosomes.size() == chromosomeFilter.size()) {
+            logger.info() << "FASTA: Chromosome filter set, all filtered chromosomes read"
+                         ", omitting subsequent reference entries" << std::endl;
+            break;
+        }
         ++recordCounter;
         seqan::CharString id;
         seqan::CharString refGenome;
         int res = seqan::readRecord(id, refGenome, refStream);
         if (res != 0) {
-            logger.err() << "FASTA: Could not read record " << recordCounter << " in reference file: " << referenceFile
-                       << std::endl;
+            logger.err() << "FASTA: Could not read record number " << recordCounter <<
+                            " in reference file: " << referenceFile << std::endl;
             return 1;
         }
-        logger.info() << "Read reference: " << id << std::endl;
-        static const seqan::CharString CHROMOSOME_TAG = "chr";
-        if (!seqan::startsWith(id, CHROMOSOME_TAG)) {
-            logger.err() << "FASTA: Could not deduce chromosome id for reference: " << id << std::endl;
-            logger.err() << "FASTA: Chromosome id for CHROMOSOME_NAME must start with: " <<
-                          '"' << CHROMOSOME_TAG << "CHROMOSOME_NAME " << '"' << std::endl;
+
+        std::string name = Chromosome::generateName(seqan::toCString(id));
+        if (name.size() == 0) {
+            logger.err() << "FASTA: Could not deduce chromosome id for reference: \"" << id << "\"" << std::endl;
             continue;
         }
-        auto chromosomeNameItBegin = seqan::begin(id) + seqan::length(CHROMOSOME_TAG);
-        std::string chromosomeName(chromosomeNameItBegin, std::find(chromosomeNameItBegin, seqan::end(id), ' '));
-        auto chromosomeIndex = chromosomeNameToIndex.find(chromosomeName);
+        auto chromosomeIndex = chromosomeNameToIndex.find(name);
         if (chromosomeIndex != chromosomeNameToIndex.end()) {
-            logger.err() << "FASTA: Duplicate reference chromosome ignored. Chromosome: " << chromosomeName << std::endl;
+            auto warn = [&](const std::string &type, const std::string &value) {
+                logger.warn() << "FASTA: Duplicate reference chromosome ignored. "
+                              << type << ": \"" << value << "\"." << std::endl; };
+            warn("Chromosome", name);
+            warn("Previous id", chromosomes[chromosomeIndex->second].id);
+            warn("Current id", seqan::toCString(id));
             continue;
         }
-        if (!chromosomeFilter.empty()) {
-            if (chromosomeFilter.find(chromosomeName) == chromosomeFilter.end()) {
-                logger.info() << "FASTA: Chromosome filter set, ignored chromosome: " << chromosomeName << std::endl;
-                continue;
-            }
+        if (!chromosomeFilter.empty() && chromosomeFilter.find(name) == chromosomeFilter.end()) {
+            logger.info() << "FASTA: Chromosome filter set. "
+                          << "Omitting chromosome: \"" << name << "\", id: \"" << id << "\"." << std::endl;
+            continue;
         }
-        auto &chromosome = *chromosomes.emplace(chromosomes.end(), chromosomeName);
-        seqan::assign(chromosome.data, refGenome);
-        if (chromosomes.size() == chromosomeFilter.size()) {
-            logger.info() << "FASTA: Chromosome filter set, all filtered chromosomes read"
-                         ", omitting subsequent reference entries" << std::endl;
-            return 0;
-        }
+        chromosomeNameToIndex.emplace(name, chromosomes.size());
+        chromosomes.emplace_back(seqan::toCString(id));
+        seqan::assign(chromosomes.back().data, refGenome);
+        logger.info() << "Read reference: " << id << std::endl;
     }
     return 0;
 }

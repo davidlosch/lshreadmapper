@@ -1,12 +1,13 @@
-#ifndef PG583_REFERENCEREADER_H
-#define PG583_REFERENCEREADER_H
+#ifndef PG583_IO_REFERENCE_READER_H
+#define PG583_IO_REFERENCE_READER_H
 
-#include "Chromosome.h"
-#include "types.h"
-
+#include <unordered_map>
 #include <unordered_set>
-#include <vector>
 #include <string>
+#include <vector>
+#include <stddef.h>
+
+class Chromosome;
 
 class ReferenceReader {
     std::unordered_map<std::string, size_t> chromosomeNameToIndex;
@@ -21,4 +22,4 @@ private:
     int readReferenceFile(const std::string &referenceFile);
 };
 
-#endif // PG583_REFERENCEREADER_H
+#endif // PG583_IO_REFERENCE_READER_H

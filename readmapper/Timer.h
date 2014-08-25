@@ -2,58 +2,22 @@
 #define PG583_TIMER_H
 
 #include <chrono>
-#include <string>
 #include <iostream>
 
-class Timer {
-private:
-    std::chrono::high_resolution_clock::time_point timeStart, timeEnd;
-    std::chrono::milliseconds duration;
-public:
-    Timer() {}
-
-    inline void startTimer() {
-        timeStart = std::chrono::high_resolution_clock::now();
-    }
-
-    inline void stopTimer() {
-        timeEnd = std::chrono::high_resolution_clock::now();
-        duration = std::chrono::duration_cast<std::chrono::milliseconds>(timeEnd - timeStart);
-    }
-
-    inline void restartTimer() {
-        stopTimer();
-        timeStart = std::chrono::high_resolution_clock::now();
-    }
-
-    void printDuration(std::string str) {
-        std::cout << str << ": " << std::fixed << duration.count() << std::endl;
-    }
-
-    inline void printAndRestartTimer(std::string str) {
-        stopTimer();
-        printDuration(str);
-        startTimer();
-    }
-
-};
-
-
-// a better timer class
 // Example for usage:
-//     JQTimer<> timer;
+//     Timer<> timer;
 //     /* do something */
 //     std::cout << timer << std::endl;
-template <class Measurement = std::chrono::milliseconds>
-class JQTimer {
+template <class Duration = std::chrono::milliseconds>
+class Timer {
 public:
     typedef std::chrono::high_resolution_clock::time_point TimePoint;
 private:
     TimePoint timeStart;
-    Measurement duration;
+    Duration duration;
 public:
-    JQTimer() :
-        duration(0) {
+    Timer() :
+        duration(Duration::zero()) {
         startTimer();
     }
 
@@ -65,27 +29,27 @@ public:
         timeStart = now();
     }
 
-    void stopTimer() {
+    Duration stopTimer() {
         TimePoint timeNow = now();
-        duration += std::chrono::duration_cast<Measurement>(timeNow - timeStart);
+        duration += std::chrono::duration_cast<Duration>(timeNow - timeStart);
         timeStart = timeNow;
+        return duration;
     }
 
     void resetTimer() {
-        duration = Measurement(0);
+        duration = Duration(Duration::zero());
         startTimer();
     }
 
-    Measurement getDuration() {
-        stopTimer();
+    Duration getDuration() const {
         return duration;
     }
 
 };
 
-template <class Measurement>
-std::ostream& operator<<(std::ostream& o, JQTimer<Measurement>& timer) {
-    o << timer.getDuration().count();
+template <class Duration>
+std::ostream& operator<<(std::ostream &o, Timer<Duration> &timer) {
+    o << timer.stopTimer().count();
     return o;
 }
 

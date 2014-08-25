@@ -1,7 +1,5 @@
 #include "align/BacktracingColumn.h"
 
-#include <string>
-
 BacktracingColumn::BacktracingColumn() :
     column(1, DELETEDCHAR),
     score(1, 0),

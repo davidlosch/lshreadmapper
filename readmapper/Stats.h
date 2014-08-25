@@ -1,13 +1,14 @@
 #ifndef PG583_STATS_H
 #define PG583_STATS_H
 
+#include "module/VariantStatisticsModule.h"
+
 #include <vector>
 #include <map>
 #include <fstream>
 #include <algorithm>
 #include <cmath>
 #include <sstream>
-#include "VariantStatisticsModule.h"
 
 void testStats();
 
@@ -22,7 +23,7 @@ std::string toString(T obj) {
 // ====== WRITE
 // ======================================================================
 template <class Value>
-void writeHistogramAsCSV(const std::vector<Value>& vector, std::ostream& strm, const std::string& headline = "") {
+void writeHistogramAsCSV(const std::vector<Value> &vector, std::ostream &strm, const std::string &headline = "") {
     std::cout << "writeHistogramAsCSV " << headline << std::endl;
     strm << headline << "\n";
     for (size_t i = 0; i < vector.size(); i++) {
@@ -32,8 +33,8 @@ void writeHistogramAsCSV(const std::vector<Value>& vector, std::ostream& strm, c
 }
 
 template <class Index, class Value>
-void writePairsAsCSV(const std::vector<std::pair<Index, Value> >& vector, std::ostream& strm,
-                     const std::string& headline = "") {
+void writePairsAsCSV(const std::vector<std::pair<Index, Value>> &vector, std::ostream &strm,
+                     const std::string &headline = "") {
     std::cout << "writePairsAsCSV " << headline << std::endl;
     strm << headline << "\n";
     for (size_t i = 0; i < vector.size(); i++) {
@@ -43,7 +44,7 @@ void writePairsAsCSV(const std::vector<std::pair<Index, Value> >& vector, std::o
 }
 
 template <class Iterator>
-void writePairsAsCSV(Iterator begin, Iterator end, std::ostream& strm, const std::string& headline = "") {
+void writePairsAsCSV(Iterator begin, Iterator end, std::ostream &strm, const std::string &headline = "") {
     std::cout << "writePairsAsCSV " << headline << std::endl;
     strm << headline << "\n";
     for (; begin != end; ++begin) {
@@ -53,13 +54,13 @@ void writePairsAsCSV(Iterator begin, Iterator end, std::ostream& strm, const std
 }
 
 template <class Iterable>
-void writePairsAsCSV(const Iterable& it, std::ostream& strm, const std::string& headline = "") {
+void writePairsAsCSV(const Iterable &it, std::ostream &strm, const std::string &headline = "") {
     writePairsAsCSV(begin(it), end(it), strm, headline);
 }
 
 template <class Value>
-void writeMatrixAsCSV(const std::vector<std::vector<Value> >& vector, std::ostream& strm,
-                      const std::string& headline = "") {
+void writeMatrixAsCSV(const std::vector<std::vector<Value>> &vector, std::ostream &strm,
+                      const std::string &headline = "") {
     std::cout << "writeMatrixAsCSV " << headline << std::endl;
     strm << headline << "\n";
     for (size_t i = 0; i < vector.size(); i++) {
@@ -75,9 +76,9 @@ void writeMatrixAsCSV(const std::vector<std::vector<Value> >& vector, std::ostre
 // ====== CONVERT
 // ======================================================================
 template <class Index, class Value, class ResultType = Value>
-std::vector<std::pair<Index, ResultType> > convertMapToHistogram(const std::map<Index, Value>& map,
-                                                                 const std::vector<Index>& steps) {
-    std::vector<std::pair<Index, ResultType> > result;
+std::vector<std::pair<Index, ResultType>> convertMapToHistogram(const std::map<Index, Value> &map,
+                                                                const std::vector<Index> &steps) {
+    std::vector<std::pair<Index, ResultType>> result;
     result.reserve(steps.size() + 1);
     for (Index i: steps) {
         result.emplace_back(i, 0);
@@ -97,9 +98,9 @@ std::vector<std::pair<Index, ResultType> > convertMapToHistogram(const std::map<
 }
 
 template <class ResultType, class Index, class Value>
-std::vector<std::pair<Index, ResultType> > convertMapToHistogram(const std::map<Index, Value>& map,
-                                                                 const std::vector<Index>& steps, bool normalize) {
-    std::vector<std::pair<Index, ResultType> > result = convertMapToHistogram<Index, Value, ResultType>(map, steps);
+std::vector<std::pair<Index, ResultType>> convertMapToHistogram(const std::map<Index, Value> &map,
+                                                                const std::vector<Index> &steps, bool normalize) {
+    std::vector<std::pair<Index, ResultType>> result = convertMapToHistogram<Index, Value, ResultType>(map, steps);
     if (normalize) {
         for (size_t i = 1; i < steps.size(); i++) {
             result[i].second /= steps[i] - steps[i-1];
@@ -112,9 +113,9 @@ std::vector<std::pair<Index, ResultType> > convertMapToHistogram(const std::map<
 
 // input and startPositions must be sorted!
 template <class Pos, class Chromosome>
-std::vector<std::pair<Chromosome, Pos> > convertPosToChromosomePos(const std::vector<Pos>& input,
-                                          const std::vector<std::pair<Chromosome, Pos> >& startPositions) {
-    std::vector<std::pair<Chromosome, Pos> > result(input.size());
+std::vector<std::pair<Chromosome, Pos>> convertPosToChromosomePos(const std::vector<Pos> &input,
+                                            const std::vector<std::pair<Chromosome, Pos>> &startPositions) {
+    std::vector<std::pair<Chromosome, Pos>> result(input.size());
     size_t curChromoIdx = 0;
     for (size_t i = 0; i < input.size(); i++) {
         size_t pos = input[i];
@@ -131,11 +132,11 @@ std::vector<std::pair<Chromosome, Pos> > convertPosToChromosomePos(const std::ve
 }
 
 template <class Index, class Value>
-std::vector<std::pair<Index, Value> > insertAllXvaluesToMap(const std::map<Index, Value>& map) {
+std::vector<std::pair<Index, Value>> insertAllXvaluesToMap(const std::map<Index, Value> &map) {
 
     Index beginIndex = map.begin()->first;
     Index lng = map.rbegin()->first - map.begin()->first + 1;
-    std::vector<std::pair<Index, Value> > result(lng);
+    std::vector<std::pair<Index, Value>> result(lng);
     auto it = map.begin();
     for (Index i = 0; i < lng; i++) {
         Index idx = beginIndex + i;
@@ -156,7 +157,7 @@ std::vector<std::pair<Index, Value> > insertAllXvaluesToMap(const std::map<Index
 // ======================================================================
 
 template <class Pos, class Count>
-std::map<size_t, size_t>  histogram_distanceBetweenVariants(const std::vector<std::pair<Pos, Count>>& sortedVector) {
+std::map<size_t, size_t>  histogram_distanceBetweenVariants(const std::vector<std::pair<Pos, Count>> &sortedVector) {
     std::cout << "histogram_distanceBetweenVariants" << std::endl;
     std::map<size_t, size_t>  result;
     for (size_t i = 1; i < sortedVector.size(); i++) {
@@ -171,13 +172,10 @@ std::map<size_t, size_t>  histogram_distanceBetweenVariants(const std::vector<st
 
 
 template <class Pos, class Count>
-std::vector<size_t> histogram_numberOfVariantsInQgram(const std::vector<std::pair<Pos, Count>>& sortedVector,
+std::vector<size_t> histogram_numberOfVariantsInQgram(const std::vector<std::pair<Pos, Count>> &sortedVector,
                                                       int q_length) {
     std::cout << "histogram_numberOfVariantsInQgram " << q_length << std::endl;
-    std::vector<size_t> result(q_length+1);
-    for (size_t& value: result) {
-        value = 0;
-    }
+    std::vector<size_t> result(q_length+1, 0);
     size_t curBeginIdx = 0; // current begin index
     size_t curEndIdx = 0; // current end index
     size_t curPos = 0; // current position
@@ -204,8 +202,8 @@ std::vector<size_t> histogram_numberOfVariantsInQgram(const std::vector<std::pai
 }
 
 template <class ResultType, class Pos, class Count>
-std::vector<ResultType> numberOfCombinations(const std::vector<std::pair<Pos, Count> >& sortedVector, int q,
-                                             const std::vector<ResultType>& limits) {
+std::vector<ResultType> numberOfCombinations(const std::vector<std::pair<Pos, Count>> &sortedVector, int q,
+                                             const std::vector<ResultType> &limits) {
     std::vector<ResultType> result(limits.size(), 0);
     size_t curBeginIdx = 0; // current begin index
     size_t curEndIdx = 0; // current end index
@@ -240,7 +238,7 @@ std::vector<ResultType> numberOfCombinations(const std::vector<std::pair<Pos, Co
 }
 
 template <class ResultType, class Pos, class Count>
-std::vector<ResultType> histogram_numberOfCombinations(const std::vector<std::pair<Pos, Count> >& sortedVector,
+std::vector<ResultType> histogram_numberOfCombinations(const std::vector<std::pair<Pos, Count>> &sortedVector,
                                                        int q_max,
                                                        ResultType limit = std::numeric_limits<ResultType>::max()) {
     std::cout << "histogram_numberOfCombinations " << q_max << std::endl;
@@ -254,12 +252,12 @@ std::vector<ResultType> histogram_numberOfCombinations(const std::vector<std::pa
 }
 
 template <class ResultType, class Pos, class Count>
-std::vector<std::vector<ResultType> > histogram_numberOfCombinations(
-                                                      const std::vector<std::pair<Pos, Count> >& sortedVector,
-                                                      const std::vector<int>& qValues,
-                                                      const std::vector<ResultType>& limitValues) {
+std::vector<std::vector<ResultType>> histogram_numberOfCombinations(
+        const std::vector<std::pair<Pos, Count>> &sortedVector,
+        const std::vector<int> &qValues,
+        const std::vector<ResultType> &limitValues) {
     std::cout << "histogram_numberOfCombinations " << std::endl;
-    std::vector<std::vector<ResultType> > result(qValues.size()+1);
+    std::vector<std::vector<ResultType>> result(qValues.size()+1);
     for (size_t i = 0; i < result.size(); i++) {
         result[i] = std::vector<ResultType>(limitValues.size()+1);
         for (size_t j = 0; j < result[i].size(); j++) {
@@ -283,7 +281,7 @@ std::vector<std::vector<ResultType> > histogram_numberOfCombinations(
 }
 
 template <class Pos, class Count>
-std::map<Count, size_t> histogram_numberOfVariantsPerPosition(const std::vector<std::pair<Pos, Count> >& variants) {
+std::map<Count, size_t> histogram_numberOfVariantsPerPosition(const std::vector<std::pair<Pos, Count>> &variants) {
     std::map<Count, size_t> result;
     for (auto entry: variants) {
         Count num = entry.second; // number of variants for this position
@@ -296,7 +294,7 @@ std::map<Count, size_t> histogram_numberOfVariantsPerPosition(const std::vector<
 }
 
 template <class Pos, class Count>
-std::map<Count, size_t> histogram_indelLength(const std::vector<std::pair<Pos, Count> >& indelLength) {
+std::map<Count, size_t> histogram_indelLength(const std::vector<std::pair<Pos, Count>> &indelLength) {
     std::map<Count, size_t> result;
     for (auto entry: indelLength) {
         Count length = entry.second;
@@ -309,7 +307,7 @@ std::map<Count, size_t> histogram_indelLength(const std::vector<std::pair<Pos, C
 }
 
 template <class Pos, class Count>
-std::map<size_t, size_t> histogram_noGapRunLength(const std::vector<std::pair<Pos, Count> >& sortedVector,
+std::map<size_t, size_t> histogram_noGapRunLength(const std::vector<std::pair<Pos, Count>> &sortedVector,
                                                   Pos allowedGap = 0) {
     std::map<size_t, size_t> result;
     const size_t size = sortedVector.size();
@@ -333,10 +331,10 @@ std::map<size_t, size_t> histogram_noGapRunLength(const std::vector<std::pair<Po
 }
 
 template <class ReturnType, class Pos, class Count>
-std::vector<std::vector<ReturnType> > histogram_noGapRunLength(const std::vector<std::pair<Pos, Count> >& sortedVector,
-                                                           const std::vector<Pos>& allowedGaps,
-                                                           const std::vector<size_t>& steps) {
-    std::vector<std::vector<ReturnType> > result(steps.size()+1);
+std::vector<std::vector<ReturnType>> histogram_noGapRunLength(const std::vector<std::pair<Pos, Count>> &sortedVector,
+                                                              const std::vector<Pos> &allowedGaps,
+                                                              const std::vector<size_t> &steps) {
+    std::vector<std::vector<ReturnType>> result(steps.size()+1);
     for (size_t i = 0; i < result.size(); i++) {
         result[i] = std::vector<ReturnType>(allowedGaps.size()+1);
         for (size_t j = 0; j < result[i].size(); j++) {
@@ -351,8 +349,8 @@ std::vector<std::vector<ReturnType> > histogram_noGapRunLength(const std::vector
     }
 
     for (size_t j = 0; j < allowedGaps.size(); j++) {
-        std::vector<std::pair<Pos, ReturnType> > v = convertMapToHistogram<ReturnType>(
-                                                   histogram_noGapRunLength(sortedVector, allowedGaps[j]), steps, true);
+        std::vector<std::pair<Pos, ReturnType>> v =
+                convertMapToHistogram<ReturnType>(histogram_noGapRunLength(sortedVector, allowedGaps[j]), steps, true);
         // the values larger than steps.back() are not copied!
         for (size_t i = 0; i < steps.size(); i++) {
             result[i+1][j+1] = v[i].second;
@@ -362,7 +360,8 @@ std::vector<std::vector<ReturnType> > histogram_noGapRunLength(const std::vector
 }
 
 template <class Pos, class Count>
-Pos findOnePositionWithManyVariants(const std::vector<std::pair<Pos, Count> >& sortedVector, size_t windowSize, int variants){
+Pos findOnePositionWithManyVariants(const std::vector<std::pair<Pos, Count>> &sortedVector, size_t windowSize,
+                                    int variants) {
     size_t curBeginIdx = 0; // current begin index
     size_t curEndIdx = 0; // current end index
     size_t curPos = 0; // current position
@@ -390,7 +389,7 @@ Pos findOnePositionWithManyVariants(const std::vector<std::pair<Pos, Count> >& s
 }
 
 template <class Pos, class Count>
-std::vector<Pos> findPositionsWithManyVariants(const std::vector<std::pair<Pos, Count> >& sortedVector, int windowSize,
+std::vector<Pos> findPositionsWithManyVariants(const std::vector<std::pair<Pos, Count>> &sortedVector, int windowSize,
                                                int variants, Pos jumpAfterFind = 0) {
     std::vector<Pos> result;
     size_t curBeginIdx = 0; // current begin index
@@ -424,12 +423,11 @@ std::vector<Pos> findPositionsWithManyVariants(const std::vector<std::pair<Pos, 
 
 // return tuple of chromosome, position, length, number of variants
 template <class Chromosome, class Pos, class Count>
-std::vector<std::vector<std::string> > findPositionsWithManyVariants(
-        const std::vector<std::pair<Pos, Count> >& sortedVector,
-        const std::vector<std::pair<Chromosome, Pos> >& startPositions,
-        size_t windowSize, int variants) {
+std::vector<std::vector<std::string>> findPositionsWithManyVariants(
+        const std::vector<std::pair<Pos, Count>> &sortedVector,
+        const std::vector<std::pair<Chromosome, Pos>> &startPositions, size_t windowSize, int variants) {
 
-    std::vector<std::vector<std::string> > result;
+    std::vector<std::vector<std::string>> result;
     enum {CHROMOSOME, POSITION, LENGTH, VARIANTS, ENUM_SIZE};
     size_t curBeginIdx = 0; // current begin index
     size_t curEndIdx = 0; // current end index
@@ -478,10 +476,10 @@ std::vector<std::vector<std::string> > findPositionsWithManyVariants(
 }
 
 template <class Pos, class Count>
-std::vector<std::pair<Count, Count> > manyVariantsExampleWindow(const std::vector<std::pair<Pos, Count> >& snps,
-                                                                const std::vector<std::pair<Pos, Count> >& indels,
-                                                                Pos position, size_t windowSize) {
-    std::vector<std::pair<Count, Count> > result(windowSize, std::pair<Count, Count>(0,0));
+std::vector<std::pair<Count, Count>> manyVariantsExampleWindow(const std::vector<std::pair<Pos, Count>> &snps,
+                                                               const std::vector<std::pair<Pos, Count>> &indels,
+                                                               Pos position, size_t windowSize) {
+    std::vector<std::pair<Count, Count>> result(windowSize, std::pair<Count, Count>(0,0));
 
     Pos endPos = position + windowSize;
     auto f = [](std::pair<Pos, Count> x, Pos p){return x.first < p;};
@@ -500,11 +498,11 @@ std::vector<std::pair<Count, Count> > manyVariantsExampleWindow(const std::vecto
 }
 
 //template <class Pos, class Count, class Length>
-//void calculateStatistics(std::vector<std::pair<Pos, Count> >& snps,
-//                         std::vector<std::pair<Pos, Count> >& indels,
-//                         std::vector<std::pair<Pos, Length> >& indelLength) {
+//void calculateStatistics(std::vector<std::pair<Pos, Count>> &snps,
+//                         std::vector<std::pair<Pos, Count>> &indels,
+//                         std::vector<std::pair<Pos, Length>> &indelLength) {
 
-void calculateStatistics(VariantStatisticsModule& vsm);
+void calculateStatistics(VariantStatisticsModule &vsm);
 
 
 

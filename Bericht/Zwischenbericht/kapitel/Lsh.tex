@@ -2,92 +2,67 @@
 \chapter{Locality Sensitive Hashing}
 \label{sec:lsh}
 \marginpar{Jan}
-Die Vorbearbeitungsschritt der Daten wird bei uns durch ein Hashing-Verfahren realisiert. Zur Alignierung der unzähligen Reads an die Referenzgenome ist ein Brute-Force-Ansatz unpraktikabel. Wir haben uns dazu entschlossen, das sogenannte \textbf{Locality Sensitive Hashing} einzusetzen. Dieses zeichnet sich dadurch aus, dass es Ähnlichkeit von Daten approximativ bestimmen kann. Eine geeignete Hashfunktion sorgt dafür, dass die Wahrscheinlichkeit einer Kollision umso größer ist, je ähnlicher die Daten sind \citep{Gionis1999}. Durch diesen Schritt erhalten wir eine Kandidatenmenge von Reads, die mit hoher Wahrscheinlichkeit an die Referenz aligniert werden können. 
+Das Readmapping wird bei uns durch ein Hashing-Verfahren realisiert.
+Zur Alignierung der unzähligen Reads an die Referenzgenome ist ein Brute-Force-Ansatz unpraktikabel.
+Wir haben uns dazu entschlossen, das sogenannte \textbf{Locality Sensitive Hashing} einzusetzen.
+Dieses zeichnet sich dadurch aus, dass es Ähnlichkeit von Daten approximativ bestimmen kann.
+Eine geeignete Hashfunktion sorgt dafür, dass die Wahrscheinlichkeit einer Kollision umso größer ist, je ähnlicher die Daten sind \citep{Gionis1999}.
+Durch diesen Schritt erhalten wir eine Menge von Positionen, an denen sich Reads mit hoher Wahrscheinlichkeit an die Referenz alignieren lassen.
+% Anm.Marcel: Anstatt vom Vorverarbeitungsschritt und Kandidaten etc. zu schreiben, sollte erwähnt werden, dass dieses Kapitel das Readmapping ansich beschreibt. Abgesehen davon sind (in Bezug auf den letzten Satz) eher die möglichen Positionen der Mappings die Kandidaten anstatt der Reads.
 
-In diesem Abschnitt wird zunächst die Grundidee erläutert und einige wichtige Begriffe eingeführt. Im weiteren Verlauf wird genauer auf die Einzelheiten des Algorithmus eingegangen. Abschließend erfolgt die Präsentation des Algorithmus.
+In diesem Abschnitt wird zunächst die Grundidee erläutert und einige wichtige Begriffe eingeführt.
+Im weiteren Verlauf wird genauer auf die Einzelheiten des Algorithmus eingegangen.
+Abschließend erfolgt die Präsentation des Algorithmus.
 \section{Grundidee}
 \label{sec:hash:idee}
 \marginpar{Jan}
-Das Hashing ist eine Abstraktion von Elementen einer großen Eingabemenge auf eine kleinere Zielmenge. Durch den Ansatz von Minhashing-Funktionen, deren genaue Erläuterung im Abschnitt \ref{sec:hash:min} erfolgt, ist es möglich, Ähnlichkeiten zu erkennen. 
+Das Hashing ist eine Abstraktion von Elementen einer großen Eingabemenge auf eine kleinere Zielmenge fester Größe.
+Durch den Ansatz von Min-Hashing-Funktionen, deren genaue Erläuterung im Abschnitt \ref{sec:hash:min} erfolgt, ist es möglich, Ähnlichkeiten zu erkennen.
 
-Zu Beginn teilen wir das Referenzgenom in Abschnitte auf, deren Länge einer vorher spezifizierten Fensterbreite entsprechen. Diese sollte auf die Länge der Reads abgestimmt sein. Sowohl jeder Abschnitt des Referenzgenom, als auch jeder Read wird als \textit{Dokument} aufgefasst. Nun erfolgen zwei Schritte:
+Zu Beginn teilen wir das Referenzgenom in Abschnitte auf, deren Länge einer vorher spezifizierten Fensterbreite entsprechen.
+Diese sollte auf die Länge der Reads abgestimmt sein.
+Sowohl jeder Abschnitt des Referenzgenom als auch jeder Read wird als \textit{Dokument} aufgefasst.
+Nun erfolgen zwei Schritte:
 \begin{itemize}
-	\item Im Minhashing wird eine Signaturmatrix berechnet. Diese repräsentiert die Dokumente als Q-Gramme und reduziert die Komplexität.
+	\item Im Min-Hashing wird eine Signaturmatrix berechnet.
+Diese repräsentiert die Dokumente als $q$-Gramme und reduziert die Komplexität.
 	\item Der LSH-Algorithmus erhält diese Signaturmatrix als Eingabe und bestimmt ähnliche Dokumente, welche als Spalten in der Matrix repräsentiert werden.
 \end{itemize}
-Wichtig ist dabei, dass das Hashing nicht direkt zwischen Abschnitten des Referenzgenoms und Reads unterscheiden kann. Nur die gehashten Teile des Referenzgenoms werden im Hashbucket der Tabelle gespeichert. Die Reads werden \textit{on the fly} überprüft. Ist im vorhandenen Bucket bereits eine Information zu einem Read gespeichert, wird die Kollision registriert und ausgegeben. Falls nicht, wird keine Information im Hashbucket hinterlegt, da diese Informationen von keinem zusätzlichen Nutzen sind. Durch diesen Mechanismus wird außerdem ausgeschlossen, dass zwei Teile des Referenzgenoms bzw. zwei Reads miteinander verglichen werden.
+\newpage
+Nur die gehashten Teile des Referenzgenoms werden in Hashbuckets der Tabelle gespeichert, da beim Hashing nicht direkt zwischen Abschnitten des Referenzgenoms und Reads unterschieden werden kann.
+Letztere werden \textit{on the fly} überprüft.
+Ist im vorhandenen Bucket bereits eine Information zu einem Read gespeichert, wird die Kollision registriert und ausgegeben.
+Falls nicht, wird keine Information im Hashbucket hinterlegt, da diese Informationen von keinem zusätzlichen Nutzen sind.
+Durch diesen Mechanismus wird außerdem ausgeschlossen, dass zwei Reads miteinander verglichen werden.
 
-Wichtig zu erwähnen ist, dass der Algorithmus eine Überprüfung auf Ähnlichkeit ausführt, nicht auf Gleichheit. Daher ist die Ausgabemenge immer eine Kandidatenmenge, die durch einen weiteren Algorithmus an das Referenzgenom aligniert werden muss, wie in Kapitel \ref{sec:align} gezeigt wird. Ein großer Vorteil ist aber, dass somit auch Varianten erkannt werden können. 
+Wichtig zu erwähnen ist, dass der Algorithmus eine Überprüfung auf Ähnlichkeit ausführt, nicht auf Gleichheit.
+Daher ist die Ausgabemenge immer eine Kandidatenmenge, die durch einen weiteren Algorithmus an das Referenzgenom aligniert werden muss, wie in Kapitel \ref{sec:align} gezeigt wird.
+Ein großer Vorteil ist aber, dass somit auch Varianten erkannt werden können, da die Kollisionswahrscheinlichkeit für eine geringe Modifikation an der Eingabe immer noch groß genug ist.
 
 \section{Wichtige Begriffe und Defintionen}
 In diesem Abschnitt werden verschiedene Begrifflichkeiten geklärt, die für das Verständnis der Vorgehensweise unerlässlich sind.
 \subsection{Hashfunktion}
 \marginpar{Jan}
 \label{sec:hash:func}
-Im Mittelpunkt jeder Abbildung steht eine Funktion. Eine Hashfunktion $h$ ordnet jedem String $s$ einen String $h(s)$ fester Länge zu, also:
+Im Mittelpunkt jeder Abbildung steht eine Funktion.
+Eine Hashfunktion $h$ ordnet jedem String $s$ einen String $h(s)$ fester Länge zu, also:
 \begin{align*}
 	h: s \mapsto h(s)
 \end{align*}
 Allgemeine Einsatzzwecke sind häufig im Bereich der Kryptographie oder Signierung anzutreffen, wo oft gewünscht wird, dass kleinste Änderungen an der Eingabe zu einer völlig anderen Ausgabe führen, wie beispielsweise bei der Erzeugung und Überprüfung von Prüfsummen.
 
-In der späteren Implementierung gibt es Bedarf an zufälligen Funktionen, wie in Abschnitt \ref{sec:hash:min} beschrieben wird. Die universelle Hashfunktion $h(x)$ lässt sich nach \citet{Leskovec2014a} wie folgt konstruieren:
+In der späteren Implementierung gibt es Bedarf an zufälligen Funktionen, wie in Abschnitt \ref{sec:hash:min} beschrieben wird.
+Die universelle Hashfunktion $h(x)$ lässt sich nach \citet{Leskovec2014a} wie folgt konstruieren:
 \begin{align*}
 	h_{a,b}(x) = ((a \cdot x + b) \mod p) \mod n
 \end{align*}
 wobei $a, b \in \mathbb{N}$ Zufallszahlen und $p > n$ eine Primzahl sind.
-\subsection{IUPAC}
-\label{sec:data:iupac}
-\marginpar{Jan}
-Die Codierung der Nukleinbasen erfolgt grundsätzlich als String über dem Alphabet $\Sigma = \lbrace A, C, T, G \rbrace$. Da die Sequenzierung fehlerbehaftet ist und mehr als ein einziges Referenzgenom existiert, gibt es das Bedürfnis nach einem erweitertem Alphabet. Die \textit{International Union of Pure and Applied Chemistry} \citep{Iupac} empfahl die Verwendung ihres Alphabets, welches gemeinhin als \textbf{IUPAC-Alphabet} bezeichnet wird. Durch die Verwendung einer Binärkodierung, die in folgender Tabelle \ref{table:iupac} dargestellt ist, ermöglicht dies eine einfache Überprüfung, ob ein Muster durch eine Sequenz abgedeckt ist.
-\begin{table}[h]
-\begin{center}
-	\begin{tabular}{|c|c|c|c|c|}
-	\hline 
-	& \textbf{G} & \textbf{C} & \textbf{A} & \textbf{T} \\ 
-	\hline 
-	\textbf{Uracil} & 0 & 0 & 0 & 0 \\ 
-	\hline 
-	\rowcolor{green} \textbf{Thymin} & 0 & 0 & 0 & 1 \\ 
-	\hline 
-	\rowcolor{green} \textbf{Adenin} & 0 & 0 & 1 & 0 \\ 
-	\hline 
-	W = AT & 0 & 0 & 1 & 1 \\ 
-	\hline 
-	\rowcolor{green} \textbf{Cytosin} & 0 & 1 & 0 & 0 \\ 
-	\hline 
-	Y = CT & 0 & 1 & 0 & 1 \\ 
-	\hline 
-	M = AC & 0 & 1 & 1 & 0 \\ 
-	\hline 
-	H = CAT & 0 & 1 & 1 & 1 \\ 
-	\hline 
-	\rowcolor{green} \textbf{Guanin} & 1 & 0 & 0 & 0 \\ 
-	\hline 
-	K = GT & 1 & 0 & 0 & 1 \\ 
-	\hline 
-	R = AG & 1 & 0 & 1 & 0 \\ 
-	\hline 
-	D = AGT & 1 & 0 & 1 & 1 \\ 
-	\hline 
-	S = CG & 1 & 1 & 0 & 0 \\ 
-	\hline 
-	B = CGT & 1 & 1 & 0 & 1 \\ 
-	\hline 
-	V = ACG & 1 & 1 & 1 & 0 \\ 
-	\hline 
-	N = ACGT & 1 & 1 & 1 & 1 \\ 
-	\hline 
-	\end{tabular} 
-\end{center}
-\label{table:iupac}
-\caption{Binärkodierung von Kombinationen von Nukleinbasen}
-\end{table}
-Die in der Tabelle dargestellten Bitmuster werden auch von unserer verwendeten Bibliothek \textit{SeqAn} verwendet. Die Bibliothek wird in Kapitel \ref{sec:seqan} näher beschrieben.
-\newpage
-\subsection{Q-Gramme}
+\subsection{\texorpdfstring{$q$}{q}-Gramme}
 \label{sec:hash:qgram}
 \marginpar[Jan]{Jan}
-Ein wichtiger Aspekt zur Vergleichbarkeit der Ähnlichkeit von Textfragmenten liefert die folgende Abstraktion: Ein beliebiger String $s$ eines Alphabets $\Sigma$ der Länge $n$ lässt sich in Teilstrings der Länge $q < n$ aufteilen. Jeder Teilstring wird als \textbf{q-Gramm}\footnote{In der Literatur finden sich weitere Bezeichnungen wie \textit{n-Gramm}, in der Genomik auch \textit{k-mer}.} bezeichnet. Zur Veranschaulichung sei folgende DNA-Sequenz gegeben:
+Ein wichtiger Aspekt zur Vergleichbarkeit der Ähnlichkeit von Textfragmenten liefert die folgende Abstraktion: Ein beliebiger String $s$ eines Alphabets $\Sigma$ der Länge $n$ lässt sich in Teilstrings der Länge $q < n$ aufteilen.
+Jeder Teilstring wird als \textbf{$q$-Gramm}\footnote{In der Literatur finden sich weitere Bezeichnungen wie \textit{n-Gramm}, in der Genomik auch \textit{k-mer}.} bezeichnet.
+Zur Veranschaulichung sei folgende DNA-Sequenz gegeben:
 \begin{center}
 	ACCATTAAG
 \end{center}
@@ -95,7 +70,10 @@ Wählt man $q = 2$, lässt sich der String in folgende \textit{2-Gramme} aufteil
 \begin{center}
 	AC, CC, CA, AT, TT, TA, AA, AG
 \end{center}
-Großen Nutzen findet die Verwendung von q-Grammen bei der bereits angesprochenen Überprüfung der Ähnlichkeit. Ein beliebiger Text lässt sich ausschließlich durch seine q-Gramme definieren. Dazu benötigt man den \textbf{q-Gramm-Index}, welcher zu jedem q-Gramm eine Position im Gesamtstring angibt. Zur Veranschaulichung sei beispielsweise folgender String gegeben:
+Großen Nutzen findet die Verwendung von $q$-Grammen bei der bereits angesprochenen Überprüfung der Ähnlichkeit.
+Ein beliebiger Text lässt sich ausschließlich durch seine $q$-Gramme definieren.
+Dazu benötigt man den \textbf{$q$-Gramm-Index}, welcher zu jedem $q$-Gramm Positionen im Gesamtstring angibt.
+Zur Veranschaulichung sei beispielsweise folgender String gegeben:
 \begin{center}
 	AGAGTC
 \end{center}
@@ -103,7 +81,7 @@ Wählt man wieder $q = 2$, erhält man folgende \textit{2-Gramme}:
 \begin{center}
 	AG, GA, GT, TC
 \end{center}
-Für jedes q-Gramm gibt man nun einen Index an, an welchen ein bestimmtes q-Gramm im Ausgangsstring gefunden werden kann:
+Für jedes $q$-Gramm gibt man nun die Indizes an, an welchen das $q$-Gramm im Ausgangsstring gefunden werden kann:
 \begin{center}
 \begin{tabular}{cc}
 AG: & 1,3 \\ 
@@ -112,59 +90,75 @@ GT: & 4 \\
 TC: & 5 \\ 
 \end{tabular} 
 \end{center}
-Aus diesen Angaben lässt sich der Ausgangsstring jederzeit rekonstruieren. Mittels der folgenden Distanzmetriken lässt sich eine Ähnlichkeit bestimmen.
+Aus diesen Angaben lässt sich der Ausgangsstring jederzeit rekonstruieren.
+Mittels der folgenden Distanzmetriken lässt sich eine Ähnlichkeit bestimmen.
 \subsubsection{Hamming-Distanz}
 \marginpar{Jan}
-Mit Hilfe der Hamming-Distanz ist es möglich, zwei gleichlange Zeichenketten auf Ähnlichkeit zu untersuchen. Dabei wird jede Position paarweise verglichen. Unterscheiden sich die Zeichen, erhöht sich der Wert um 1. Seien beispielsweise folgende Sequenzen gegeben:
+Mit Hilfe der Hamming-Distanz ist es möglich, zwei gleichlange Zeichenketten auf Ähnlichkeit zu untersuchen.
+Dabei wird jede Position paarweise verglichen.
+Unterscheiden sich die Zeichen, erhöht sich der Wert um 1.
+Seien beispielsweise folgende Sequenzen gegeben:
 \begin{center}
 	A\underline{CC}AT \\
 	A\underline{GG}AT
 \end{center}
-An den unterstrichenen Positionen 2 und 3 unterscheiden sich beide Sequenzen. Dementsprechend ist die Hamming-Distanz 2.
+An den unterstrichenen Positionen 2 und 3 unterscheiden sich beide Sequenzen.
+Dementsprechend ist die Hamming-Distanz 2.
 \subsubsection{Edit-Distanz}
 \marginpar{Jan}
-Die Edit-Distanz (oder auch 	Levenshtein-Distanz) erweitert die Hamming-Distanz auf den Umstand, dass auch Strings unterschiedlicher Länge vergleichen werden können. Ausgehend vom Ursprungsstring wird die minimale Anzahl an Änderungen kumuliert, mit welcher dieser in den Zieltext transformiert werden kann. Als Änderung zählen dabei Einsetz- und Löschoperationen, sowie komplettes ersetzen eines Zeichens. Sei beispielsweise der folgende String gegeben:
+Die Edit-Distanz (oder auch Levenshtein-Distanz) erweitert die Hamming-Distanz dahingehend, dass auch Strings unterschiedlicher Länge vergleichen werden können.
+Ausgehend vom Ursprungsstring wird die minimale Anzahl an Änderungen kumuliert, mit welcher dieser in den Zieltext transformiert werden kann.
+Als Änderung zählen dabei Einsetz- und Löschoperationen, sowie komplettes Ersetzen eines Zeichens.
+Sei beispielsweise der folgende String gegeben:
 \begin{center}
 	A\underline{C}C\underline{A}T \\
 	AGCT
 \end{center}
-Durch genau zwei Operationen an den unterstrichenen Stellen (Ersetzen von C zu G sowie Löschen von A) lässt sich der obere String in den unteren transformieren.
-\subsubsection{q-Gramm-Distanz}
+Durch genau zwei Operationen an den unterstrichenen Stellen (Ersetzen von C durch G sowie Löschen von A) lässt sich der obere String in den unteren transformieren.
+\subsubsection{$q$-Gramm-Distanz}
 \marginpar{Jan}
-Diese Metrik definiert sich auf zwei beliebig langen Strings eines gemeinsamen Alphabets. Nach \citet{Rahmann2013} definiert dieser sich durch:
+Diese Metrik ist auf zwei beliebig langen Strings eines gemeinsamen Alphabets definiert.
+Nach \citet{Rahmann2013} ist die Distanz folgendermaßen definiert:
 \begin{align}
 	\sum_{x \in \Sigma^q} \vert N_x(s) - N_x(t) \vert
 \end{align}
-wobei $\Sigma^q$ die Menge aller vorkommenden q-Gramme und $N_x(s)$ das Vorkommen eines bestimmten q-Grammes $x$ im spezifizierten String $s$ bezeichnet. 
+wobei $\Sigma^q$ die Menge aller vorkommenden $q$-Gramme und $N_x(s)$ das Vorkommen eines bestimmten $q$-Grammes $x$ im spezifizierten String $s$ bezeichnet.
+
 \subsubsection{Jaccard-Ähnlichkeit}
 \marginpar{Jan}
-Eine allgemeinere Metrik, welche nicht auf Strings oder Q-Gramme aufbaut, ist die \textbf{Jaccard-Ähnlichkeit}. Sie ist als Maß für die Ähnlichkeit zwischen Mengen wie folgt definiert \citep{Leskovec2014}:
+Eine allgemeinere Metrik, welche nicht auf Strings oder $q$-Gramme aufbaut, ist die \textbf{Jaccard-Ähnlichkeit}.
+Sie ist als Maß für die Ähnlichkeit zwischen Mengen wie folgt definiert \citep{Leskovec2014}:
 \begin{align}
 	\label{eq:jaccard}
 	J(A,B) = \dfrac{A \cap B}{A \cup B} \in [0,1]
 \end{align}
-%TODO: Bessere Formulierung.
-Im folgenden Abschnitt des Minhashings kommt dieser Ähnlichkeit eine besondere Bedeutung zu.
-\section{Minhashing}
+Diese Ähnlichkeit hat eine besondere Bedeutung für das Min-Hashing, welches im folgenden Abschnitt behandelt wird.
+\section{Min-Hashing}
 \label{sec:hash:min}
 \marginpar{Jan}
-Da unser Anwendungskontext dem typischen Anwendungszweck einer Hashfunktion, bei dem eine Kollision selbst bei minimalen Unterschieden der Eingabedaten nahezu ausgeschlossen sein soll, widerspricht, führen wir das \textbf{Minhashing} ein. Sie soll gleiche und Daten mit marginalen Unterschieden auf denselben Hashwert abbilden. 
+Im typischen Anwendungszweck einer Hashfunktion soll sich der Hashwert für bereits kleine Unterschiede der Eingabe signifikant unterscheiden.
+Der Ansatz des \textbf{Min-Hashings} steht diesem gegenüber:
+Mittels Min-Hashing können Eingabedaten mit wenigen Unterschieden auf denselben Hashwert abgebildet werden.
 
-Großes Problem ist dabei, welche Ähnlichkeitsmetrik verwendet wird. Neben den Distanz- und Ähnlichkeitsmetriken aus dem vorigen Abschnitt, ist der \textit{Euklidische Abstand}, welcher den Abstand zwischen Punkten im geometrischen Raum beschreibt, eine weiteres populäres Maß. Besser geeignet ist jedoch die in Formel \eqref{eq:jaccard} eingeführte Jaccard-Ähnlichkeit, mit welcher sich das gewünschte Verhalten von Minhashing-Funktionen spezifizieren lässt. Diese sollen nach \citet{Indyk1998} folgende Eigenschaften erfüllen:
+Ein großes Problem ist dabei, welche Ähnlichkeitsmetrik verwendet wird.
+Neben den Distanz- und Ähnlichkeitsmetriken aus dem vorigen Abschnitt, ist der \textit{euklidische Abstand}, welcher den Abstand zwischen Punkten im geometrischen Raum beschreibt, eine weiteres populäres Maß.
+Besser geeignet ist jedoch die in Formel~\eqref{eq:jaccard} eingeführte Jaccard-Ähnlichkeit, mit welcher sich das gewünschte Verhalten von Min-Hashing-Funktionen spezifizieren lässt.
+Diese sollen nach \citet{Indyk1998} folgende Eigenschaften erfüllen:
 \begin{align*}
 		h(A) &= h(B) \text{, falls } J(A,B) \mapsto 1 \\
 		h(A) &\neq h(B) \text{, falls } J(A,B) \mapsto 0
 \end{align*} 
-Um dieses Verfahren anwenden zu können, müssen die zu untersuchenden Daten in \textit{Dokumente} umgewandelt werden. Dies lässt sich einfach durch Bildung von sich überlappenden Q-Gramme bewerkstelligen, wie folgendes Beispiel visualisiert: \\\\
-Dokument 1: TTACCG mit den Q-Grammen: TT, TA, AC, CC, CG \\ 
-Dokument 2: GCAT mit den Q-Grammen: GC, CA, AT \\
-Dokument 3: TTACC mit den Q-Grammen: TT, TA, AC, CC \\
-Dokument 4: CGCAT mit den Q-Grammen: CG, GC, CA, AT
+Um dieses Verfahren anwenden zu können, müssen die zu untersuchenden Daten in Abschnitte  umgewandelt werden, die im Kontext des Locality Sensitive Hashings auch häufig als \textit{Dokumente} bezeichnet werden.
+Dies lässt sich einfach durch Bildung von sich überlappenden $q$-Grammen wie im folgenden Beispiel bewerkstelligen: \\\\
+Dokument 1: TTACCG mit den $q$-Grammen: TT, TA, AC, CC, CG \\ 
+Dokument 2: GCAT mit den $q$-Grammen: GC, CA, AT \\
+Dokument 3: TTACC mit den $q$-Grammen: TT, TA, AC, CC \\
+Dokument 4: CGCAT mit den $q$-Grammen: CG, GC, CA, AT
 \begin{table}[H]
 \begin{center}
 	\begin{tabular}{|c|c|c|c|c|}
 	\hline 
-	Q-Gramme & Dokument 1 & Dokument 2 & Dokument 3 & Dokument 4\\ 
+	$q$-Gramme & Dokument 1 & Dokument 2 & Dokument 3 & Dokument 4\\ 
 	\hline 
 	AC & $\checkmark$ & & $\checkmark$ &\\ 
 	CG &  $\checkmark$& & &  $\checkmark$\\ 
@@ -177,38 +171,53 @@ Dokument 4: CGCAT mit den Q-Grammen: CG, GC, CA, AT
 	\hline 
 	\end{tabular} 
 \end{center}
-\caption{Boolsche Matrix der Q-Gramme der Dokumente}
+\caption{Boolsche Matrix der $q$-Gramme der Dokumente}
 \label{table:bool-qgramm}
 \end{table}
-Alle Dokumente lassen sich auch mit Hilfe einer boolschen Matrix darstellen, wie in Tabelle \ref{table:bool-qgramm} zu erkennen ist. Diese Darstellung ist nötig, um eine weitere Abstraktion einzuführen, um durch Berechnung und Speicherung von Signaturen, Speicherplatz einzusparen. Diese lässt sich durch die Annahme \textit{Ähnlichkeit der Matrixspalten = Ähnlichkeit der Signaturen} begründen \citep{Leskovec2014a}.
+Alle Dokumente lassen sich auch mit Hilfe einer boolschen Matrix (\textit{Signaturmatrix}) darstellen, wie in Tabelle \ref{table:bool-qgramm} zu erkennen ist.
+Es wird in der Matrix nur die Existenz eines $q$-Gramms in einem Dokument aufgeführt, nicht jedoch die Anzahl der Vorkommen.
+Die Speicherung erfolgt durch eine Signatur, bei der zwei ähnliche Dokumente eine ähnliche Signatur erhalten \citep{Leskovec2014a}. %TODO: Bessere Formulierung?
+%Zwei ähnliche Dokumente werden in ihrer $q$-Gramm-Matrix ebenfalls als ähnlich angenommen~\citep{Leskovec2014a}. % FIXME: Anm. Marcel: Verstehe den Satz nicht
+Durch diese Handhabung können Dokumente mit ähnlichen Sequenzen gefunden werden, die jedoch nicht zwangsweise in der gleichen Reihenfolge vorkommen müssen.
+Ursprünglich wurde dieser Zusammenhang für die Suche von Internetseiten mit ähnlichem Inhalt benutzt~\cite{Slaney2008}.
 
-In den nächsten Abschnitten wird auf die Konstruktion der Signaturmatrix eingegangen. Zunächst wird aber eine wichtige Eigenschaft eingeführt, welche den Konstruktionsalgorithmus ermöglicht.
+%Diese Darstellung ist nötig, um eine weitere Abstraktion einzuführen, um durch Berechnung und Speicherung von Signaturen, Speicherplatz einzusparen.
+%Diese lässt sich durch die Annahme \textit{Ähnlichkeit der Matrixspalten = Ähnlichkeit der Signaturen} begründen \citep{Leskovec2014a}.
+
+In den nächsten Abschnitten wird auf die Konstruktion der Signaturmatrix eingegangen.
+Zunächst wird aber eine wichtige Eigenschaft eingeführt, welche den Konstruktionsalgorithmus ermöglicht.
 \subsection{Min-Hash-Eigenschaft}
 \label{sec:lsh:min:eig}
 \marginpar{Jan}
 Eine vorgestellte Hashfunktion, welche die von \citet{Indyk1998} geforderten Eigenschaften erfüllt, baut auf der \textit{Min-Hash-Eigenschaft} auf, welche von \citet{Leskovec2014a} definiert wurde:
 \begin{theorem}
-	Sei $\pi$ eine zufällige Permutation. Es gilt:
+	Sei $\pi$ eine zufällige Permutation.
+Es gilt:
 	\begin{align*}
 	P(h_\pi (C_1) = h_\pi (C_2)) = J(C_1, C_2)
 	\end{align*}
 \end{theorem}
 
 \begin{beweis}
-Sei $X$ eine Dokument, also eine Menge von Q-Grammen. Sei $x \in X$ ein einzelnes Q-Gramm. Dann gilt:
+Sei $X$ eine Dokument, also eine Menge von $q$-Grammen.
+Sei $x \in X$ ein einzelnes $q$-Gramm.
+Dann gilt:
 \begin{align*}
 	P(\pi(x) = min(\pi(X))) = \dfrac{1}{\vert X \vert}
 \end{align*}
-Dies gilt offensichtlich, da es bei einer zufälligen Permutation gleich wahrscheinlich ist, dass jedes Q-Gramm das minimale Element ist. 
+Dies gilt offensichtlich, da es bei einer zufälligen Permutation gleich wahrscheinlich ist, dass jedes $q$-Gramm das minimale Element ist.
 
-Sei $x$ nun so gewählt, dass $\pi(x) = min(\pi (C_1 \cup C_2))$. Dann gilt:
+
+Sei $x$ nun so gewählt, dass $\pi(x) = min(\pi (C_1 \cup C_2))$.
+Dann gilt:
 \begin{align*}
 	\pi(x) =\begin{cases}
 		min(\pi(C_1)), & \text{falls } x \in C_1 \\
 		min(\pi(C_2)), & \text{falls } x \in C_2
 	\end{cases}
 \end{align*}
-Es können auch beide Fälle eintreten, und zwar genau dann wenn $x \in C_1 \cap C_2$. Führt man beides zusammen, gilt
+Es können auch beide Fälle eintreten, und zwar genau dann wenn $x \in C_1 \cap C_2$.
+Führt man beides zusammen, gilt
 \begin{align*}
 	P(min(\pi (C_1)) = min (\pi (C_2))) &= \dfrac{\vert C_1 \cap C_2 \vert}{\vert C_1 \cup C_2 \vert} = J(C_1, C_2)
 \end{align*}
@@ -217,7 +226,10 @@ Es können auch beide Fälle eintreten, und zwar genau dann wenn $x \in C_1 \cap
 \subsection{Generierung der Signaturmatrix}
 \label{sec:lsh:min:sig}
 \marginpar{Jan}
-Mit Hilfe dieser Eigenschaft kann nun die Signaturmatrix erstellt werden. Dabei bedient sich \citet{Leskovec2014a} einem einfachen Trick. Da es zu aufwendig ist, viele verschiedene zufällige Permutationen zu berechnen, werden einfach zufällige universelle Hashfunktionen, wie in Abschnitt \ref{sec:hash:func} eingeführt, verwendet. Die Signaturmatrix wird nun nach folgendem Algorithmus \ref{algorithm:minhash-permutation} aufgestellt:
+Mit Hilfe dieser Eigenschaft kann nun die Signaturmatrix erstellt werden.
+Dabei bedient sich \citet{Leskovec2014a} eines einfachen Tricks.
+Da es zu aufwendig ist, viele verschiedene zufällige Permutationen zu berechnen, werden einfach zufällige universelle Hashfunktionen, wie in Abschnitt \ref{sec:hash:func} eingeführt, verwendet.
+Die Signaturmatrix wird nun nach folgendem Algorithmus \ref{algorithm:minhash-permutation} aufgestellt:
 
 \begin{algorithm}[H]
 \caption{Hashfunktion für die Permutation}
@@ -229,7 +241,7 @@ Mit Hilfe dieser Eigenschaft kann nun die Signaturmatrix erstellt werden. Dabei 
 \ENSURE Signaturmatrix M
 \STATE Initialisiere die Signaturmatrix M mit $\infty$
 \FOR{jede Zeile $r$ der boolschen Matrix $B$}
-\IF{$r$ in Spalte $c$ hat 1}
+\IF{$r$ in Spalte $c$ hat $\checkmark$}
 \FORALL{Hashfunktion $h_i \in H$}
 \IF{$k_i(j) < M[c][i]$}
 \STATE $M[c][i] \leftarrow k_i(j)$
@@ -237,15 +249,20 @@ Mit Hilfe dieser Eigenschaft kann nun die Signaturmatrix erstellt werden. Dabei 
 \ENDFOR
 \ENDIF
 \ENDFOR
-\end{algorithmic}
+\end{algorithmic} % FIXME: Parameter c wird nicht erwähnt, Iteration über die Dokumente / Spalten nicht ersichtlich
 \end{algorithm}
-Die Signaturmatrix wird zunächst leer initialisiert. Nun wird jede Zeile der boolschen Matrix überflogen. Hat diese für das jeweilige Dokument einen Eintrag \textit{true}, so wird der Hashwert der zugeordneten Funktion gebildet. Ist das Ergebnis kleiner als der bisherige Wert in der Signaturmatrix, wird dieser übernommen. Dies wird für jede Zelle der Ausgangsmatrix ausgeführt, so dass in der Signaturmatrix die minimalen Werte der Permutation stehen. In Tabelle \ref{table:sig} ist das Ergebnis der Signaturmatrix nach Anwendung des Algorithmus auf die Signaturmatrix aus Tabelle \ref{table:bool-qgramm}:
+Die Signaturmatrix wird zunächst leer initialisiert.
+Nun wird jede Zeile der boolschen Matrix überflogen.
+Hat diese für das jeweilige Dokument einen Eintrag \textit{true}, so wird der Hashwert der zugeordneten Funktion gebildet.
+Ist das Ergebnis kleiner als der bisherige Wert in der Signaturmatrix, wird dieser übernommen.
+Dies wird für jede Zelle der Ausgangsmatrix ausgeführt, so dass in der Signaturmatrix die minimalen Werte der Permutation stehen.
+Tabelle \ref{table:sig} zeigt die Signaturmatrix, welche nach Anwendung des Algorithmus auf die Boolsche Matrix aus Tabelle \ref{table:bool-qgramm} entsteht:
 
 \begin{table}[H]
 \begin{center}
 		\begin{tabular}{|cccc|c|cccc|}
 \hline
-\multicolumn{4}{|c|}{Permutation $\pi$} & Q-Gramme & \multicolumn{4}{|c|}{Dokumente}\\ 
+\multicolumn{4}{|c|}{Permutation $\pi$} & $q$-Gramme & \multicolumn{4}{|c|}{Dokumente}\\ 
 $\pi_1$ & $\pi_2$ & $\pi_3$ & $\pi_4$&  & $D_1$ & $D_2$ & $D_3$ & $D_4$ \\
 \hline 
 2 & 4 & 3 & 1 &AC & $\checkmark$ & & $\checkmark$ &\\ 
@@ -279,19 +296,20 @@ $\pi_4$ & 1 & 2 & 1 & 2 \\
 \label{fig:signaturmatrix}
 \label{table:sig}
 \end{table}
-\newpage
-\section{Locality-Sensitive-Hashing}
+\section{Locality Sensitive Hashing}
 \label{sec:hash:lsh}
 \marginpar{David}
-Durch Erstellung der Signaturmatrix konnte eine Reduktion der Q-Gramm-Mengen auf eine konstante Anzahl von Signaturwerten durchgeführt werden.
-Da die Signaturwerte durch Min-Hashing erzeugt wurden, gehen dabei aber nicht viele Informationen verloren: Ähnliche Dokumente, also ähnliche Q-Gramm-Mengen, werden auf weiterhin ähnliche Signaturen abgebildet.
-Mit Hilfe der Signaturmatrix könnte jetzt schon ein Ähnlichkeitsvergleich zwischen allen Dokumenten in $\mathcal{O}(n^2)$ durchgeführt werden, wenn $n$ die Anzahl der Dokumente kennzeichnet.
-Der naive Ähnlichkeitsvergleich könnte zB jedes Dokument $i$ mit allen anderen Dokumenten $j \neq i$ vergleichen, indem die Anzahl der gemeinsamen Signaturwerte berechnet wird.
-Um aber noch mehr Laufzeit zu gewinnen, setzt man an dieser Stelle mit einem weiteren Hashing-Verfahren namens Locality-Sensitive-Hashing an. \\
-Zu diesem Zweck wird die Signaturmatrix in $b$ Bänder aufgeteilt, d.h. es werden pro Dokument mehrere Signaturwerte zu einem Band zusammengefasst:
-\begin{figure}
-		\caption{Aufteilung der Signaturmatrix in Bänder}	
-		\label{fig:signaturband}
+Durch Erstellung der Signaturmatrix konnte eine Reduktion der $q$-Gramm-Mengen auf eine konstante Anzahl von Signaturwerten durchgeführt werden.
+Da die Signaturwerte durch Min-Hashing erzeugt wurden, gehen dabei aber nicht viele Informationen verloren: Ähnliche Dokumente, also ähnliche $q$-Gramm-Mengen, werden auf weiterhin ähnliche Signaturen abgebildet.
+Mit Hilfe der Signaturmatrix könnte jetzt schon ein Ähnlichkeitsvergleich zwischen allen Dokumenten in $\mathcal{O}(n^2)$ Zeit durchgeführt werden, wenn $n$ die Anzahl der Dokumente kennzeichnet.
+Der naive Ähnlichkeitsvergleich könnte zum Beispiel jedes Dokument $i$ mit allen anderen Dokumenten $j \neq i$ vergleichen, indem die Anzahl der gemeinsamen Signaturwerte berechnet wird.
+Um aber noch mehr Laufzeit zu gewinnen, setzt man an dieser Stelle mit einem weiteren Hashing-Verfahren namens Locality Sensitive Hashing an.
+
+Zu diesem Zweck wird die Signaturmatrix in $b$ Bänder aufgeteilt, d.h.
+es werden pro Dokument mehrere Signaturwerte zu einem Band zusammengefasst:
+\begin{table}[H]
+		\label{table:signaturband}
+		\begin{center}
 		\begin{tabular}{|c|cccc|p{2cm}|}
 				\hline 
 				$M$ & $D_1$ & $D_2$ & $D_3$ & $D_4$ & \\ 
@@ -302,7 +320,9 @@ $\pi_3$ & 1 & 2 & 1 & 2 & $\rdelim\}{2}{1cm}[Band 2]$\\
 $\pi_4$ & 1 & 2 & 1 & 2 & \\ 
 \hline 
 \end{tabular} 
-\end{figure}
+\end{center}
+\caption{Aufteilung der Signaturmatrix in Bänder}	
+\end{table}
 Die Idee ist nun, Ähnlichkeit zwischen zwei Dokumenten dadurch zu charakterisieren, dass sie in einem Band die exakt gleiche Menge von Signaturwerten haben.
 Falls zwei Dokumente eigentlich ähnlich sind, aber im ersten Band nicht die gleiche Menge von Signaturwerten haben, ist die Wahrscheinlichkeit trotzdem groß, dass sie in einem anderen Band die gleiche Menge haben.
 Der große Vorteil durch diese Vereinfachung ist, dass die Suche von gleichen Teildaten einer Join-Operation in Datenbanken entspricht.
@@ -311,7 +331,7 @@ Anstatt paarweise Vergleiche durchzuführen, kann für jedes Band pro Dokument e
 Offensichtlich werden dadurch gleiche Werte auf gleiche Hash-Buckets abgebildet.
 Dadurch folgt direkt eine Reduktion der Laufzeit von $\mathcal{O}(n^2)$ auf $\mathcal{O}(n)$, denn es muss nur einmal über alle Dokumente iteriert werden.
 Pro Dokument wird für jedes Band ein Hashwert berechnet.
-Anschließend wird das aktuelle Dokument an den entsprechenden Bucket in der Hashtabelle angehängt.
+Anschließend wird das aktuelle Dokument in den entsprechenden Bucket in der Hashtabelle eingefügt.
 Waren vorher schon andere Dokumente in dem Hashbucket, dann tritt eine  \textit{Kollision} auf und diese Dokumente werden zu dem aktuellen Dokument als \textit{ähnlich} klassifiziert.
 Mit anderen Worten: Wurde für zwei Dokumente in irgendeinem Band der gleiche Hashwert berechnet, dann werden die Dokumente direkt als ähnlich klassifiziert.
 Durch Anpassen der Bandgröße kann die Ähnlichkeitstoleranz variiert werden.
@@ -354,7 +374,8 @@ Durch Anpassen der Bandgröße kann die Ähnlichkeitstoleranz variiert werden.
 \section{Implementierung}
 \label{impl:cpp-lsh}
 \marginpar{David}
-Im folgenden Abschnitt wird nun die Implementierung vorgestellt. 
+Im folgenden Abschnitt wird nun die Implementierung vorgestellt.
+
 Wie bereits erläutert, werden Abschnitte aus dem Referenzgenom und einzelne Reads beide als \textit{Dokument} im Sinne des LSH aufgefasst.
 In der ersten Implementierung wurden Referenzteile und Reads simultan in die Hashtabelle eingetragen.
 Zwei Kriterien sprachen schnell gegen eine solche Arbeitsweise:
@@ -362,18 +383,20 @@ Zwei Kriterien sprachen schnell gegen eine solche Arbeitsweise:
 	\item Wird ein Dokument an einen Hash-Bucket angehängt, muss zusätzlich gespeichert werden, ob es sich bei dem Dokument um einen Referenzabschnitt oder einen Read handelt
 	\item Reads können in dieser Form auch mit anderen Reads kollidieren
 \end{itemize}
-Letzteres kann unter Umständen in einer anderen Anwendung nützlich sein, bringt aber keinen Vorteil für Read Mapping, wie es im Rahmen dieser Projektgruppe betrieben werden soll.
+Letzteres kann unter Umständen in einer anderen Anwendung nützlich sein, bringt aber keinen Vorteil für das Readmapping, wie es im Rahmen dieser Projektgruppe betrieben werden soll.
 Um das Speichern des Dokumententyps zu umgehen, werden Referenzteile und Reads nun nacheinander bearbeitet.
 Im ersten Schritt werden die Abschnitte aus dem Referenzgenom in die Hashtabelle eingetragen.
 Ist das komplette Genom abgearbeitet, werden anschließend paketweise Reads behandelt.
 Anstatt Reads in der Hashtabelle zu speichern, wird nur eine Kollision mit Referenzteilen gemeldet.
 Falls ein Read in keinem Band mit einem Referenzabschnitt kollidiert, wird es als non-matching markiert und in einer separaten Liste gespeichert.
-Alle anderen Referenzabschnitt-Read-Kollisionspaare werden ebenfalls in einer Liste gespeichert. \\
+Alle anderen Referenzabschnitt-Read-Kollisionspaare werden ebenfalls in einer Liste gespeichert.
+\\
 
 \subsection{Signaturberechnung}
-Während der Signaturberechnung eines Dokuments wird einerseits die Menge der im Dokument vorkommenen Q-Gramme und andererseits das Min-Hashing berechnet.
-Zunächst sei zu erwähnen, dass nicht die eigentliche Q-Gramm-Menge gespeichert wird, sondern nur direkt berechnete Hashwerte der Q-Gramme.
-Das dient dazu, den Speicher für große $Q$ nicht zu sehr zu beanspruchen, denn die konkreten Q-Gramme werden nach der Min-Hash-Berechnung nicht mehr benötigt. \\
+Während der Signaturberechnung eines Dokuments wird einerseits die Menge der im Dokument vorkommenen $q$-Gramme und andererseits das Min-Hashing berechnet.
+Zunächst sei zu erwähnen, dass nicht die eigentliche $q$-Gramm-Menge gespeichert wird, sondern nur direkt berechnete Hashwerte der $q$-Gramme.
+Das dient dazu, den Speicher für große $Q$ nicht zu sehr zu beanspruchen, denn die konkreten $q$-Gramme werden nach der Min-Hash-Berechnung nicht mehr benötigt.
+\\
 Im vorigen Abschnitt wurde im Rahmen der Signaturberechnung erläutert, dass verschiedene Hashfunktionen benutzt werden, um die Permutationen zu implementieren.
 Tatsächlich wird allerdings nur eine Hashfunktion benutzt, nämlich die Hash-Funktion aus der C++11-Standardbibliothek:
 \begin{lstlisting}
@@ -381,33 +404,36 @@ std::hash<unsigned int> hashFunction;
 \end{lstlisting}
 Um beliebig viele andere Hashfunktionen zu simulieren, werden stattdessen Zufallszahlen bitweise mit dem von \textit{hashFunction} berechneten Wert verarbeitet.
 Dazu wird vor dem Ausführen des Algorithmus ein Array \textit{hashFunctions} mit Zufallszahlen initialisiert, das so groß ist wie die gewünschte Signaturlänge.
-Für jedes Q-Gramm in einem Dokument wird nur einmal die Hashfunktion berechnet und als \textit{qGramHash} zwischengespeichert.
+Für jedes $q$-Gramm in einem Dokument wird nur einmal die Hashfunktion berechnet und als \textit{qGramHash} zwischengespeichert.
 Anschließend wird über das Array \textit{hashFunctions} iteriert und \textit{qGramHash} wird per XOR mit der Zufallszahl an der Stelle $i$ aus dem Array verknüpft:
 \begin{lstlisting}
-unsigned int hashValue = qGramHash ^ hashFunctions[i];	
-signature[i] = hashValue < signature[i] ? hashValue : signature[i];
+unsigned int hashValue = qGramHash ^ hashFunctions[i];
+if (hashValue < signature[i])
+    signature[i] = hashValue;
 \end{lstlisting}
-Die berechneten Hashes zeigten sich in der Praxis als hinreichend unterschiedlich. \\
+Die berechneten Hashes zeigten sich in der Praxis als hinreichend unterschiedlich.
+\\
 In der Implementierung wird versucht, die Performance des Signaturerzeugens zu optimieren, da sich dieser Teil des LSH als am rechenintensivsten herausstellte.
 Dazu wurde die Signaturberechnung der Reads mittels OpenMP parallelisiert.
-Da zwischen den Reads kein Zusammenhang besteht, werden dazu keine Synchronisationsmechanismen benötigt.
+Da die Reads unabhängig voneinander abgearbeitet werden können, werden dazu keine Synchronisationsmechanismen benötigt.
 Zudem wurden beim Min-Hash-Berechnen unnötig komplizierte Branches vermieden, sodass moderne Compiler automatische Vektorisierung einsetzen können.
 Der generierte Assemblercode nutzt somit SIMD-Funktionen und erhöht die Performance.
-\subsection{Locality-Sensitive-Hashing}
-Wie bereits erläutert, wird beim Locality-Sensitive-Hashing über jedes Dokument iteriert und für jedes Band ein Hashwert berechnet.
+\subsection{Locality Sensitive Hashing}
+Wie bereits erläutert, wird beim Locality Sensitive Hashing über jedes Dokument iteriert und für jedes Band ein Hashwert berechnet.
 In der Implementierung stellte sich heraus, dass es nicht notwendig ist, für jedes Band eine separate Hashtabelle zu speichern.
 In den bisher gezeigten Beispielen war es nicht unüblich, dass für zwei unähnliche Dokumente in unterschiedlichen Bändern trotzdem der gleicher Hashwert berechnet wurde.
 Allerdings ist das in der Praxis so unwahrscheinlich, dass kein relevanter Unterschied bei der Ausgabe zu erkennen ist, wenn nur eine einzige Hashtabelle benutzt wird.
 Das liegt vor allem daran, dass die berechneten Hashwerte über das gesamte 32-bit-Zahlenspektrum reichen und nicht nur wie in den gezeigten Beispielen bis zu zweistelligen Zahlen.
-Falls dadurch trotzdem eine Kollision auftritt, die nicht korrekt ist, dann werden zwei möglicherweise unähnliche Dokumente als ähnlich klassifiziert.
-Durch das semiglobale Alignment im anschließenden Schritt können diese aber als schlechte Alignments klassifiziert und somit ignoriert werden. \\
+Falls dadurch trotzdem eine Kollision auftritt, die nicht korrekt ist, werden zwei möglicherweise unähnliche Dokumente als ähnlich klassifiziert.
+Durch das semiglobale Alignment im anschließenden Schritt können diese aber als schlechte Alignments klassifiziert und somit ignoriert werden.
+\\
 In jedem Hashbucket wird in der Implementierung eine Liste von \textit{HashBucketEntry}s gespeichert:
 \begin{lstlisting}
 struct HashBucketEntry {
     unsigned int documentID;
     unsigned int chromosome;
 };
-std::unordered_map<unsigned int, std::vector<HashBucketEntry>>
-	hashTable;	
+std::unordered_map
+    <unsigned int, std::vector<HashBucketEntry>> hashTable;
 \end{lstlisting}
 Ein Dokument (Referenzabschnitt) wird mit einem \textit{HashBucketEntry} durch das Tupel von Chromosom-ID und Dokument-ID innerhalb des Chromosoms eindeutig zugeordnet.

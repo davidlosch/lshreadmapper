@@ -1,5 +1,8 @@
 #include "align/Variant.h"
-#include <string>
+
+#include <seqan/sequence.h>
+
+#include <limits>
 
 Variant::Variant() :
     position(std::numeric_limits<decltype(position)>::max()) {
@@ -7,7 +10,7 @@ Variant::Variant() :
 
 const Variant Variant::none;
 
-Variant::Variant(size_t position, ReferenceString insertionString) :
+Variant::Variant(size_t position, const ReferenceString &insertionString) :
     position(position),
     insertionString(insertionString) {
 }
@@ -17,7 +20,7 @@ Variant::Variant(size_t position, size_t deletionLength) :
     deletionLength(deletionLength) {
 }
 
-Variant::Variant(size_t position, ReferenceString insertionString, size_t deletionLength) :
+Variant::Variant(size_t position, const ReferenceString &insertionString, size_t deletionLength) :
     position(position),
     deletionLength(deletionLength),
     insertionString(insertionString) {
@@ -27,7 +30,7 @@ size_t Variant::getPosition() const {
     return position;
 }
 
-const ReferenceString &Variant::getInsertionString() const {
+const ReferenceString& Variant::getInsertionString() const {
     return insertionString;
 }
 

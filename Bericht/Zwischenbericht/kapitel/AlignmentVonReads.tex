@@ -2,13 +2,13 @@
 \label{sec:align}
 \marginpar{Sven}
 
-Der bisher beschriebene Algorithmus auf Basis des Locality-Sensitive-Hashing kann einen Read auf eine oder mehrere Abschnitte des Referenzgenoms abbilden. Allerdings hat dieses Verfahren aufgrund seiner Funktionsweise zwei Nachteile. Zum einen beinhaltet es eine Zufallskomponente, sodass nicht alle Treffer zwischen Reads und Referenzabschnitten gefunden werden bzw. nicht jeder gefundene Treffer auch tatsächlich einer ist. Zum anderen paart es lediglich Reads und  große Sequenzabschnitte miteinander, ein genaues Alignment findet jedoch nicht statt. Für Letzteres verwenden wir daher einen zweiten Algorithmus, der für jeden Read und eine vorgegebene Fehlerschranke ein bestmögliches Alignment innerhalb seines Referenzabschnittes sucht. Bei diesem Algorithmus handelt es sich um eine Variante des Needleman-Wunsch-Algorithmus, der auf dynamischer Programmierung basiert. Die Laufzeit des Algorithmus ist linear in der Länge des Referenzabschnittes, sodass die Vorverarbeitung durch das Locality-Sensitive-Hashing erforderlich ist, um praktikable Laufzeiten zu erreichen.
+Der bisher beschriebene Algorithmus auf Basis des Locality Sensitive Hashings kann einen Read auf einen oder mehrere Abschnitte des Referenzgenoms abbilden. Allerdings hat dieses Verfahren aufgrund seiner Funktionsweise zwei Nachteile. Zum einen beinhaltet es eine Zufallskomponente, sodass nicht alle passenden Paare von Reads und Referenzabschnitten gefunden werden bzw. nicht jeder gefundene Treffer auch tatsächlich einem solchen Paar entspricht. Zum anderen paart es lediglich Reads und große Sequenzabschnitte miteinander, ein genaues Alignment findet jedoch nicht statt. Für Letzteres verwenden wir daher einen zweiten Algorithmus, der für jeden Read ein bestmögliches Alignment innerhalb seines Referenzabschnittes sucht. Dieser Algorithmus basiert auf dynamischer Programmierung und orientiert sich am Algorithmus für approximative Mustersuche in \citep{Rahmann2013}, welcher wiederum auf dem Algorithmus aufbaut, der in \citep{Ukkonen1985} beschrieben wird. Die Laufzeit des Algorithmus ist linear in der Länge des Referenzabschnittes, sodass die Vorverarbeitung durch das Locality Sensitive Hashing erforderlich ist, um praktikable Laufzeiten zu erreichen.
 
 \section{Globales und semiglobales Alignment}
 \label{sec:align:basics}
 \marginpar{Sven}
 
-Ein Alignment ist informell eine zeichenweise Zuordnung eines Musters $p$ (engl.: \textit{pattern}) zu einem Text $t$. Dazu können sowohl in  $p$ als auch $t$ Leerzeichen bzw. Lücken eingefügt werden, sodass ein Zeichen von $p$ auch einer Lücke in $t$ zugeordnet werden kann und umgekehrt. Einzig der Fall, dass zwei Lücken sich gegenseitig zugeordnet werden, ist nicht zulässig, damit nicht unendlich viele Lücken in beide Sequenzen eingefügt werden können.
+Ein Alignment ist informell eine zeichenweise Zuordnung eines Musters $p$ (engl.: \textit{pattern}) zu einem Text $t$. Dazu können sowohl in $p$ als auch in $t$ Leerzeichen bzw. Lücken eingefügt werden, sodass ein Zeichen von $p$ auch einer Lücke in $t$ zugeordnet werden kann und umgekehrt. Einzig der Fall, dass zwei Lücken sich gegenseitig zugeordnet werden, ist nicht zulässig, damit nicht unendlich viele Lücken in beide Sequenzen eingefügt werden können.
 
 \begin{beispiel}
 \label{bsp:align:basics:alignment}
@@ -23,9 +23,9 @@ Zwei Alignments zwischen dem Text $t = \texttt{BARBARA}$ und dem Muster $p = \te
 \end{multicols}
 \end{beispiel}
 
-Alignments lassen sich wie folgt auch formal definieren.
+Alignments lassen sich wie folgt auch formal definieren:
 
-\begin{definition}[vgl \citep{Rahmann2013}, Definition 4.7]
+\begin{definition}[vgl. \citep{Rahmann2013}, Definition 4.7]
 \label{def:align:basics:alignment}
 Seien $p, t \in \Sigma^*$ zwei Strings. Ein Alignment $A = A_1 \cdots A_k$ zwischen $p$ und $t$ ist ein String über dem Alphabet $\left( \Sigma \cup \{ - \} \right)^2 \setminus \{ -,-\}$ mit $\pi_1(A) = p$ und $\pi_2(A) = t$. Dabei ist $\pi_1$ ein String-Homorphismus mit $\pi_1(A_i) = \pi_1((a,b)_i) := a$ für $a \in \Sigma$ und $\pi_1((-,b)_i) := \epsilon$ für alle $i \in \{1, \ldots, k\}$. Analog ist $\pi_2$ für die zweite Komponente definiert.
 \end{definition}
@@ -35,28 +35,28 @@ Ein solches Alignment wird auch als \textit{globales} Alignment bezeichnet, da d
 \begin{enumerate}
 \item Beide Komponenten sind gleich (entspricht einem \textit{match} zwischen zwei Zeichen)
 \item Beide Komponenten sind unterschiedlich und keine Lücken (entspricht einem \textit{mismatch} zwischen zwei Zeichen)
-\item Die erste Komponente ist eine Lücke, die andere ein Zeichen aus $t$ (entspricht einer \textit{insertion})
-\item Die erste Komponente ist ein Zeichen aus $p$, die andere eine Lücke (entspricht einer \textit{deletion})
+\item Die erste Komponente ist ein Zeichen aus $p$, die andere eine Lücke (entspricht einer \textit{insertion})
+\item Die erste Komponente ist eine Lücke, die andere ein Zeichen aus $t$ (entspricht einer \textit{deletion})
 \end{enumerate}
 
 Intuitiv sind natürlich Alignments interessant, bei denen möglichst viele Teile von $p$ und $t$ zusammenpassen. Der erste Ansatz ist die Minimierung der Fehlerzahl. Die Anzahl der \textit{Fehler} entspricht dabei der Anzahl der Vorkommen von Zeichen des zweiten, dritten und vierten Falls. Diese Arten von Fehlern entsprechen gerade den üblichen Modifikationsoperationen der Edit-Distanz. Ein Alignment, welches die Anzahl der Fehler minimiert, gibt damit auch die (minimale) Edit-Distanz zwischen $p$ und $t$ an.
 
 Der zweite Ansatz ist die Verwendung von \textit{scoring}. Jeder der vier Fälle bekommt eine bestimmte Punktzahl zugewiesen, die anschließend maximiert wird. Offensichtlich erhält daher der erste Fall eine positive Punktzahl, während die anderen Fälle eine nicht-positive Punktzahl erhalten. Durch die feinere Gewichtung ist dieser Ansatz flexibler als der erste. In unserer aktuellen Implementierung beschränken wir uns der Einfachheit halber dennoch auf den ersten Ansatz.
 
-Die Suche eines optimalen globalen Alignments lässt sich mit Hilfe von dynamischer Programmierung lösen. Für ein Muster $p = p_1 \ldots p_m$ und einen Text $t = t_1 \ldots t_n$ wird eine Matrix $F$ berechnet, wobei $F[i,j]$ die minimale Fehlerzahl eines Alignments zwischen $p_1 \ldots p_i$ und $t_1 \ldots t_j$ enthält. Die Matrix $F$ besitzt $m+1$ Zeilen und $n+1$ Spalten, deren Indizierung bei $0$ beginnt. Die erste Zeile und die erste Spalte werden wie folgt initialisiert:
+Die Suche eines optimalen globalen Alignments lässt sich mit Hilfe von dynamischer Programmierung lösen. Die hier verwendete Beschreibung stammt aus \citep{Rahmann2013}, der originale Algorithmus stammt von \citet{Needleman1970}. Für ein Muster $p = p_1 \ldots p_m$ und einen Text $t = t_1 \ldots t_n$ wird eine Matrix $F$ berechnet, wobei $F[i,j]$ die minimale Fehlerzahl eines Alignments zwischen $p_1 \ldots p_i$ und $t_1 \ldots t_j$ enthält. Die Matrix $F$ besitzt $m+1$ Zeilen und $n+1$ Spalten, deren Indizierung bei $0$ beginnt. Die erste Zeile und die erste Spalte werden wie folgt initialisiert:
 
 \begin{align*}
 F[i,0] &:= i \qquad \forall \, 0 \leq i \leq m \\
 F[0,j] &:= j \qquad \forall \, 1 \leq j \leq n
 \end{align*}
 
-Wird ein Sring der Länge $0$ (also der leere String) mit einem String der Länge $i$ aligniert, so ergeben sich zwangsläufig $i$ Insertionen \bzw Deletionen, sodass die Initialisierung korrekt ist. Die Rekursionsgleichung für die dynamische Programmierung besteht aus drei verschiedenen Fällen. 
+Wird ein String der Länge $0$ (also der leere String) mit einem String der Länge $i$ aligniert, so ergeben sich zwangsläufig $i$ Insertionen \bzw Deletionen, sodass die Initialisierung korrekt ist. Die Rekursionsgleichung für die dynamische Programmierung besteht aus drei verschiedenen Fällen. 
 
 \[
 F[i,j] = \min \left\{\begin{array}{ll} F[i-1,j-1] &+ \, \chardist{p_i}{t_j}\\ F[i-1,j] &+ \, 1 \\ F[i,j-1] &+ \, 1 \end{array}\right. \mbox{wobei} \: \chardist{u}{v} = \left\{\begin{array}{cl} 0, & \mbox{falls} \, u = v\\ 1, & \mbox{sonst} \end{array}\right.
 \]
 
-Der obere Fall (diagonale Rekursionsrichtung) entspricht dabei einem \textit{match} \bzw einem \textit{mismatch}. Der mittlere Fall (vertikale Rekursionsrichtung) entspricht einer Deletion, d.h. das Alignment enthält hier textseitig eine Lücke. Analog dazu entspricht der dritte Fall (horizontale Rekursionsrichtung) einer Insertion, bei der das Alignment musterseitig eine Lücke enthält. Das Feld $F[m,n]$ enthält die Edit-Distanz zwischen $p$ und $t$. 
+Der obere Fall (diagonale Rekursionsrichtung) entspricht dabei einem \textit{match} \bzw einem \textit{mismatch}. Der mittlere Fall (vertikale Rekursionsrichtung) entspricht einer Insertion, d.h. das Muster enthält ein Zeichen, welches im Text nicht vorkommt. Analog dazu entspricht der dritte Fall (horizontale Rekursionsrichtung) einer Deletion, bei der das Alignment musterseitig eine Lücke enthält. Das Feld $F[m,n]$ enthält die Edit-Distanz zwischen $p$ und $t$. 
 
 Um das genaue Alignment zu erhalten, müssen bei der Berechnung von $F$ zusätzliche Information über die verwendete Rekursion gespeichert werden. In unserer Implementierung enthält jedes Feld von $F$ ein zusätzliches Label, welches die benutzte Rekursionsrichtung angibt. Mit dieser Information lässt sich das konkrete Alignment berechnen, indem die Tabelle von $F[m,n]$ aus rückwärts entlang der Rekursionsrichtung traversiert wird. Üblicherweise wird ein Alignment als Cigar-String (\vgl Abschnitt \ref{sec:data:cigar}) bezüglich des Musters ausgegeben. Dieser lässt sich durch die Rückwärtstraversierung leicht generieren, indem er bei jedem Schritt um das passende Zeichen (für (mis)match, insertion und deletion) erweitert wird.
 
@@ -69,7 +69,7 @@ Sei $p := \texttt{ACGAT}$ und $t := \texttt{CGACGATTA}$ und das optimale Alignme
 \texttt{- - A C G A T - -}
 \end{beispiel}
 
-In diesem Fall ist $p$ ein Substring von $t$, dennoch würde obiger Algorithmus hier insgesamt vier Fehler zählen. Da die Position eines Reads im Referenzgenom beliebig sein kann, würde uns bereits ein optimales Alignment zwischen $p$ und einem Substring von $t$ genügen. Ein solches Alignment wird auch als \textit{semiglobales} Alignment von $p$ an $t$ bezeichnet.
+In diesem Fall ist $p$ ein Substring von $t$, dennoch würde obiger Algorithmus hier insgesamt vier Fehler zählen. Da die Position eines Reads im Referenzgenom beliebig sein kann, würde uns bereits ein optimales Alignment zwischen $p$ und einem Substring von $t$ genügen. Ein solches Alignment wird auch als \textit{semiglobales} Alignment von $p$ an $t$ bezeichnet \citep{Rahmann2013, Ukkonen1985}.
 
 Der bestehende Algorithmus lässt sich leicht auf semiglobale Alignments erweitern. Dazu sind zwei Änderungen nötig:
 
@@ -203,7 +203,7 @@ An der Rückwärtsverfolgung ändert sich prinzipiell nichts. Die folgende Abbil
 				        (87) edge[->,red] node[font=\tiny,color=red] {M} (76)
 				        (76) edge[->,red] node[font=\tiny,color=red] {X} (65)
 				        (65) edge[->,red] node[font=\tiny,color=red] {M} (54)
-				        (54) edge[->,red] node[font=\tiny,color=red] {D} (53)
+				        (54) edge[->,red] node[font=\tiny,color=red] {I} (53)
 				        (53) edge[->,red] node[font=\tiny,color=red] {M} (42)
 				        (42) edge[->,red] node[font=\tiny,color=red] {M} (31);
 				  \path
@@ -212,7 +212,7 @@ An der Rückwärtsverfolgung ändert sich prinzipiell nichts. Die folgende Abbil
 				        (67) edge[->,dashed,green] node { } (56);
 				        
 	\end{tikzpicture}
-\caption{Beispielberechnung für semiglobales Alignment mit $p := \texttt{AACCTTT}$ und $t:=\texttt{CGAACTGTC}$. Der markierte Pfad gibt das beste semiglobale Alignment an und den Beitrag am Cigar-String an. Dieser lautet hier \texttt{2M1D1M1X1M}, wobei das \texttt{X} für ein mismatch steht. Die grünen Pfeile visualiseren nochmal, auf welche Werte bei der Berechnung eines Eintrags zugegriffen wird.}
+\caption{Beispielberechnung für semiglobales Alignment mit $p := \texttt{AACCTTT}$ und $t:=\texttt{CGAACTGTC}$. Der markierte Pfad gibt das beste semiglobale Alignment an und den Beitrag am Cigar-String an. Dieser lautet hier \texttt{2M1I1M1X1M}, wobei das \texttt{X} für ein mismatch steht. Die grünen Pfeile visualiseren nochmal, auf welche Werte bei der Berechnung eines Eintrags zugegriffen wird.}
 \label{fig:align:basics:semiglobalbeispiel}
 \end{figure}
 
@@ -234,7 +234,7 @@ Vor dem Alignieren müssen alle SNPs in der VCF-Datei gesucht und in den IUPAC-k
 
 Für Insertionen und Deletionen wird die Rekursionsgleichung des Algorithmus erweitert. Bisher wurde ein Tabelleneintrag in $F$ aus dem darüberliegenden Wert und aus zwei Werten der vorigen Spalte berechnet. Für die Behandlung von Indels werden zusätzliche Werte bei der Rekursion berücksichtigt.
 
-Der einfachere Fall ist eine Deletionsvariante. Angenommen es soll die $j$-te Spalte der Tabelle $F$ berechnet werden und an der Position $j-k$ im Referenzabschnitt $t$ liegt eine Deletion der Länge $k$ vor, d.h. die Zeichen $t_{j-k}, \ldots , t_{j-1}$ würden durch die Deletion entfernt werden. Für die Berechnung eines Eintrags in der $j$-ten Spalte muss der Algorithmus entscheiden, ob das besseres Alignment mit der Originalsequenz oder durch Weglassen der betroffenen Zeichen erreichen lässt. Zusätzlich zur $j-1$-ten Spalte berücksichtigt der Algorithmus dazu die $j-k-1$-te Spalte, also die Spalte vor der Deletionsvariante. Die genaue Formel für den Eintrag $F[i,j+k]$ sieht dabei wie folgt aus:
+Der einfachere Fall ist eine Deletionsvariante. Angenommen es soll die $j$-te Spalte der Tabelle $F$ berechnet werden und an der Position $j-k$ im Referenzabschnitt $t$ liegt eine Deletion der Länge $k$ vor, d.h. die Zeichen $t_{j-k}, \ldots , t_{j-1}$ würden durch die Deletion entfernt werden. Für die Berechnung eines Eintrags in der $j$-ten Spalte muss der Algorithmus entscheiden, ob das besseres Alignment mit der Originalsequenz oder durch Weglassen der betroffenen Zeichen erreicht wird. Zusätzlich zur $j-1$-ten Spalte berücksichtigt der Algorithmus dazu die $j-k-1$-te Spalte, also die Spalte vor der Deletionsvariante. Die genaue Formel für den Eintrag $F[i,j+k]$ sieht dabei wie folgt aus:
 
 \[
 F[i,j] = \min \left\{\begin{array}{cl} F[i-1,j-1] &+ \chardist{p_i}{t_j}\\ F[i-1,j] &+ 1 \\ F[i,j-1] &+ 1 \\ F[i-1,j-k-1] &+ \chardist{p_i}{t_j} \\ F[i,j-k-1] &+ 1 \end{array}\right. 
@@ -242,9 +242,9 @@ F[i,j] = \min \left\{\begin{array}{cl} F[i-1,j-1] &+ \chardist{p_i}{t_j}\\ F[i-1
 
 Die oberen drei Fälle sind identisch zur bisher bekannten Rekursionsgleichung. Die unteren beiden Fälle stehen intuitiv für die Entscheidung des Algorithmus, die Spalten $j-k, \ldots, j-1$ zu \glqq überspringen\grqq. Die Einträge der $j$-ten Spalte werden unabhängig voneinander nach diesem Verfahren berechnet, d.h. die Entscheidung für oder gegen die Variante wird bei jedem Eintrag unabhängig getroffen.
 
-Im Allgemeinen können auch mehrere Deletionsvarianten an der gleichen Position enden. In diesem Fall werden so viele zusätzliche Spalten bei der Berechnung berücksichtigt wie es endende Deletionsvarianten an der entsprechenden Position gibt. Für jede zusätzliche Spalte erhöht sich die Anzahl der Rekursionsfälle um zwei. Da sich der Algorithmus immer lokal für oder gegen eine Variante entscheidet, besteht hier nicht das Problem, dass Anhäufungen von Varianten zu einer kombinatorischen Explosion führen können. Die Laufzeit bleibt linear in der Länge des Referenzabschnitts und der Anzahl der Deletionsvarianten.
+Im Allgemeinen können auch mehrere Deletionsvarianten an der gleichen Position enden. In diesem Fall werden so viele zusätzliche Spalten bei der Berechnung berücksichtigt, wie es endende Deletionsvarianten an der entsprechenden Position gibt. Für jede zusätzliche Spalte erhöht sich die Anzahl der Rekursionsfälle um zwei. Da sich der Algorithmus immer lokal für oder gegen eine Variante entscheidet, besteht hier nicht das Problem, dass Anhäufungen von Varianten zu einer kombinatorischen Explosion führen können. Die Laufzeit bleibt linear in der Länge des Referenzabschnitts und der Anzahl der Deletionsvarianten.
 
-Insertionsvarianten werden ähnlich wie Deletionen behandelt. Falls an der Position $j$ eine Insertionsvariante der Länge $k$ mit Insertionssequenz $s$ vorliegt, trifft der Algorithmus bei der Berechnung der $j+1$-Spalte wieder eine lokale Entscheidungen, ob er die Insertion nutzt oder nicht. Während bei Deletionen einfach auf zurückliegenden Spalten zugegriffen werden konnte, müssen bei Insertionen temporär zusätzliche Tabellenspalten berechnet werden. Der Algorithmus führt spekulativ die Berechnung des Alignments mit der Insertionssequenz $s$ fort. Die letzte Spalte der spekulativen Berechnung fließt nun in die Berechnung der eigentlichen $j+1$-ten Spalte ein. Der Prozess wird in Abbildung \ref{fig:align:basics:insertalign} visualisiert.
+Insertionsvarianten werden ähnlich wie Deletionen behandelt. Falls an der Position $j$ eine Insertionsvariante der Länge $k$ mit Insertionssequenz $s$ vorliegt, trifft der Algorithmus bei der Berechnung der $j+1$-Spalte wieder eine lokale Entscheidungen, ob er die Insertion nutzt oder nicht. Während bei Deletionen einfach auf zurückliegende Spalten zugegriffen werden konnte, müssen bei Insertionen temporär zusätzliche Tabellenspalten berechnet werden. Der Algorithmus führt spekulativ die Berechnung des Alignments mit der Insertionssequenz $s$ fort. Die letzte Spalte der spekulativen Berechnung fließt nun in die Berechnung der eigentlichen $j+1$-ten Spalte ein. Der Prozess wird in Abbildung \ref{fig:align:basics:insertalign} visualisiert.
 
 \begin{figure}[htbp]
 \centering
@@ -402,7 +402,7 @@ Insertionsvarianten werden ähnlich wie Deletionen behandelt. Falls an der Posit
 				  \draw[blue,dashed,rounded corners=10] (7.5,0.5) rectangle (9.5,-8.5);
 				        
 	\end{tikzpicture}
-\caption{Erweiterung der Beispielberechnung aus Abbildung \ref{fig:align:basics:semiglobalbeispiel} mit einer zusätzlichen Insertionsvariante zwischen $t_4$ und $t_5$ mit $s = \texttt{CT}$. Die spekulative Berechnung für die Insertion ist blau umrandet. Die grünen Pfeile deuten die Rekursionsfälle an, die sich durch eine Insertionsvariante ergeben.}
+\caption{Erweiterung der Beispielberechnung aus Abbildung \ref{fig:align:basics:semiglobalbeispiel} mit einer zusätzlichen Insertionsvariante zwischen $t_5$ und $t_6$ mit $s = \texttt{CT}$. Die spekulative Berechnung für die Insertion ist blau umrandet. Die grünen Pfeile deuten die Rekursionsfälle an, die sich durch eine Insertionsvariante ergeben.}
 \label{fig:align:basics:insertalign}
 \end{figure}
 
@@ -419,11 +419,11 @@ Bei der Berechnung des semiglobalen Alignments ohne Varianten besteht die Ausgab
 \item Beginnt ein Alignment in einer Insertion, wird die Position vor der Insertion als Position im Referenzgenom ausgegeben. Es wird eine zweite Startposition gespeichert, die den Beginn des Alignments innerhalb des Insertionsstrings angibt.
 \end{itemize}
 
-Da das SAM-Format für diese Informationen keine dedizierten Felder hat, nutzen wir dafür das Zusatzfeld, welches im SAM-Format vorgesehen ist. Dadurch bleibt die Datei für andere Readmapper weiterhin lesbar und wir können alle nötigen Informationen aus unserer SAM-Datei rekonstruieren.
+Da das SAM-Format für diese Informationen keine dedizierten Felder hat, nutzen wir dafür das Zusatzfeld, welches im SAM-Format vorgesehen ist. Dadurch bleibt die Datei für andere Programme weiterhin lesbar und wir können alle nötigen Informationen aus unserer SAM-Datei rekonstruieren.
 
 Beim Ausfüllen der Alignierungstabelle speichert der Algorithmus ebenfalls neue Informationen ab, damit die Ausgabe wie oben beschrieben erfolgen kann. Die Spalten der normalen Alignierungstabelle werden zusammen mit den spekulativ berechneten Insertionsspalten in einer großen Tabelle gespeichert, sodass jede dieser Spalten intern eindeutig referenzierbar ist. Jeder Tabelleneintrag enthält nicht nur die Information, durch welchen der Rekursionsfälle sein Wert zustande kam, sondern auch einen Spaltenindex, auf den sich der Rekursionsfall bezieht. Werden bspw. bei einer Deletion Zeichen im Referenzgenom übersprungen, so ist der Rechenweg durch den Spaltenindex eindeutig rekonstruierbar.
 
-Jede Spalte enthält außerdem die korrespondierende Position im Referenzgenom, im Falle von Insertionsspalten die Position innerhalb der aktuellen Insertion und den Index der Variante, zu der diese Spalte gehört. Beim Rückwärtsdurchlauf durch die Tabelle, bei dem das Alignment in Form eines Cigar-Strings berechnet wird, können dadurch alle Information bezüglich verwendeter Varianten und der verschiedenen Startposition leicht eingesammelt werden.
+Jede Spalte enthält außerdem die korrespondierende Position im Referenzgenom, im Falle von Insertionsspalten die Position innerhalb der aktuellen Insertion und den Index der Variante, zu der diese Spalte gehört. Beim Rückwärtsdurchlauf durch die Tabelle, bei dem das Alignment in Form eines Cigar-Strings berechnet wird, können dadurch alle Information bezüglich verwendeter Varianten und der verschiedenen Startpositionen leicht eingesammelt werden.
 
 \subsection{Laufzeitoptimierung}
 \label{sec:align:variants:optimize}
@@ -575,7 +575,7 @@ Abbildung \ref{fig:align:basics:errors} zeigt die vorherige Tabelle, wobei hier 
 				  \node[inn] (96) at (12,-7) {3};
 				  \node[inn] (97) at (12,-8) {2};
 	\end{tikzpicture}
-\caption{Alignierungstabelle aus den vorigen Beispielen. Die rot markierten Felder müssten aufgrund kleinen Fehlerschranke von $1$ gar nicht berechnet werden.}
+\caption{Alignierungstabelle aus den vorigen Beispielen. Die rot markierten Felder müssten aufgrund einer kleinen Fehlerschranke von $1$ gar nicht berechnet werden.}
 \label{fig:align:basics:errors}
 \end{figure}
 
@@ -592,6 +592,6 @@ Falls also die $j-1$-te Spalte ab der $k$-ten Zeile nur Werte enthält, die grö
 Für den Beweis wird ausgenutzt, dass sich zwei benachbarte Tabellenwerte um höchstens $1$ unterscheiden können. Dies lässt sich durch Widerspruch und Fallunterscheidungen leicht zeigen. Aus $F[k,j-1] > t$ folgt daraus $F[k,j] \geq t$. Durch die Rekursionsgleichung des Algorithmus müssen auch alle Einträge unterhalb von $F[k,j]$ größer als $t$ sein, da die Werte der vorigen Spalte größer als $t$ sind.
 \end{beweis}
 
-Für die erste Spalte der Alignierungstabelle ist bereits bekannt, dass ab der $t$-ten Spalte alle Einträge größer als $t$ sind. Unser Algorithmus nutzt nun Theorem \ref{theo:align:variants:optimize}, indem er die Alignierungstabelle spaltenweise berechnet und sich für jede Spalte $j$ einen Wert \lastrow{j} merkt, der die letzte Zeile unterhalb der Fehlerschranke angibt. Um zusätzlich Speicherplatz zu sparen, wird die Tabelle spaltenweise gespeichert, wobei für jede Spalte nur so viel Speicher alloziert wird, wie sie tatsächlich benötigt.
+Für die erste Spalte der Alignierungstabelle ist bereits bekannt, dass ab der $x$-ten Spalte alle Einträge größer als $x$ sind. Unser Algorithmus nutzt nun Theorem \ref{theo:align:variants:optimize}, indem er die Alignierungstabelle spaltenweise berechnet und sich für jede Spalte $j$ einen Wert \lastrow{j} merkt, der die letzte Zeile unterhalb der Fehlerschranke angibt. Um zusätzlich Speicherplatz zu sparen, wird die Tabelle spaltenweise gespeichert, wobei für jede Spalte nur so viel Speicher alloziert wird, wie sie tatsächlich benötigt.
 
-Durch Indel-Varianten kann eine Alignierungsspalte auch mehrere Vorgängerspalten besitzen. Um die Aussage des Theorems anwenden zu können, muss hier das Maximum alle entsprechenden \lastrow{j}-Werte betrachtet werden.
+Durch Indel-Varianten kann eine Alignierungsspalte auch mehrere Vorgängerspalten besitzen. Um die Aussage des Theorems anwenden zu können, muss hier das Maximum aller entsprechenden \lastrow{j}-Werte betrachtet werden.

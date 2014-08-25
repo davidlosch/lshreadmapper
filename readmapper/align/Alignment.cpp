@@ -1,9 +1,7 @@
-#include "Alignment.h"
-#include <iostream>
+#include "align/Alignment.h"
+#include "align/Variant.h"
 
-using std::string;
-
-Alignment::Alignment() :    
+Alignment::Alignment() :
     cigar(),
     alignmentString(),
     usedVariants(),
@@ -24,7 +22,7 @@ std::string Alignment::getCigar() {
         currentChar = 0;
         currentCharCounter = 0;
         // rebuild cigar, if it has been changed
-        cigar = string(reversedCigar.rbegin(), reversedCigar.rend());
+        cigar = std::string(reversedCigar.rbegin(), reversedCigar.rend());
         cigarInvalid = false;
     }
     return cigar;
@@ -52,7 +50,7 @@ size_t Alignment::getPosition() {
     return position;
 }
 
-const Variant &Alignment::getStartVariant() {
+const Variant& Alignment::getStartVariant() {
     return startVariant;
 }
 
@@ -60,7 +58,7 @@ int Alignment::getStartOffset() {
     return startOffset;
 }
 
-int Alignment::getErrorCount() {
+size_t Alignment::getErrorCount() {
     return errorCount;
 }
 
@@ -105,7 +103,7 @@ void Alignment::flush() {
     if(currentCharCounter > 0) {
         reversedCigar += currentChar;
         std::string count = std::to_string(currentCharCounter);
-        reversedCigar += string(count.rbegin(), count.rend());
+        reversedCigar += std::string(count.rbegin(), count.rend());
     }
 }
 

@@ -1,13 +1,9 @@
-#ifndef PG583_VARIANT_H
-#define PG583_VARIANT_H
+#ifndef PG583_ALIGN_VARIANT_H
+#define PG583_ALIGN_VARIANT_H
 
 #include "types.h"
 
-#include <seqan/sequence.h>
-
-#include <string>
-#include <cstddef>
-#include <limits>
+#include <stddef.h>
 
 class Variant {
     Variant(); // private, only used for static instance "none"
@@ -19,15 +15,15 @@ public:
     };
 
     Variant(size_t position, size_t deletionLength);
-    Variant(size_t position, ReferenceString insertionString);
-    Variant(size_t position, ReferenceString insertionString, size_t deletionLength);
+    Variant(size_t position, const ReferenceString &insertionString);
+    Variant(size_t position, const ReferenceString &insertionString, size_t deletionLength);
 
     // move constructor and assignment operator need for std::sort
     Variant(Variant &&) = default;
-    Variant &operator=(Variant &&var) = default;
+    Variant& operator=(Variant &&var) = default;
 
     Variant(const Variant &) = default;
-    Variant &operator=(const Variant &var) = default;
+    Variant& operator=(const Variant &var) = default;
     ~Variant() = default;
 
     size_t getPosition() const;
@@ -50,4 +46,4 @@ bool operator<(const std::reference_wrapper<T> &lhs, const std::reference_wrappe
     return (T &) lhs < (T &) rhs;
 }
 
-#endif // PG583_VARIANT_H
+#endif // PG583_ALIGN_VARIANT_H

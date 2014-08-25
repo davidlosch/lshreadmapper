@@ -1,5 +1,6 @@
-#include "Logger.h"
 #include "io/VariantsReader.h"
+#include "Chromosome.h"
+#include "types.h"
 
 #include <type_traits>
 
@@ -33,7 +34,7 @@ trimCommonPrefixAndSuffix(TSeq1 &seq1, TSeq2 &seq2) {
 int VariantsReader::readVariants(const std::vector<std::string> &variantFiles) {
     logger.info() << "VCF: Reading variant files." << std::endl;
     for (size_t i = 0; i < chromosomes.size(); ++i) {
-        chromosomeNameToIndex[chromosomes[i].name] = i;
+        chromosomeNameToIndex[Chromosome::generateName(chromosomes[i].id)] = i;
     }
     for (auto &variantFile : variantFiles) {
         readVariantsFile(variantFile);
@@ -76,10 +77,6 @@ int VariantsReader::readVariantsFile(const std::string &variantFile) {
 
 int VariantsReader::processRecord(seqan::VcfRecord &record, const seqan::VcfIOContext &context) {
     std::string chromosomeName = seqan::toCString((*context.sequenceNames)[record.rID]);
-
-    if (chromosomeName == "MT") { // Mitochondrium
-        chromosomeName = "M"; // TODO: remove ugly hardcoding
-    }
 
     if (!chromosomeFilter.empty() && chromosomeFilter.find(chromosomeName) == chromosomeFilter.end()) {
         return 0;
@@ -127,7 +124,7 @@ int VariantsReader::processRecord(seqan::VcfRecord &record, const seqan::VcfIOCo
                 break;
             }
             log << ", ignored. At" <<
-                   " Chromosome: \"" << chromosome.name << "\"" <<
+                   " Chromosome: \"" << chromosomeName << "\"" <<
                    " Position: " << record.beginPos <<
                    " Ref: \"" << record.ref << "\"" <<
                    " Alt: \"" << orgAlt << "\"" <<

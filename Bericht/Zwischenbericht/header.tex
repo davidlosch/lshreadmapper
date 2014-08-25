@@ -1,7 +1,7 @@
 % header.tex
 \documentclass[a4paper,11pt,twoside,ngerman,color]{book}
 \usepackage[a4paper,left=3.5cm,right=2.5cm,bottom=3.5cm,top=3cm]{geometry}
-
+\usepackage{ngerman}
 %
 %\usepackage{setspace}
 %\renewcommand{\baselinestretch}{0.4}\normalsize
@@ -159,6 +159,7 @@
 \newcommand{\blankpage}{
  \clearpage{\pagestyle{empty}\cleardoublepage}
 }
+% \usepackage{ae, aecompl}
 
 % Keine einzelnen Zeilen beim Anfang eines Abschnitts (Schusterjungen)
 \clubpenalty = 10000
@@ -173,6 +174,7 @@
 \newcommand{\card}[1]{\lvert #1 \rvert}
 \newcommand{\chardist}[2]{\ensuremath{\text{dist}(#1,#2)}}
 \newcommand{\lastrow}[1]{\ensuremath{\text{lastRow}(#1)}}
+\newcommand{\qmarks}[1]{\glqq #1\grqq}
 
 % Namen der Autoren an den Seitenrändern
 %\usepackage[fulladjust]{marginnote}
@@ -183,3 +185,6 @@
 %\makeatother
 %\marginnoteleftadjust 10pt
 % \setlength{\marginparsep}{20pt}
+
+% BVerbatim benutzt, um verbatim zentrieren zu können
+\usepackage{etex,fancyvrb}

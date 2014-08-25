@@ -1,15 +1,15 @@
 #include "align/VariantIndex.h"
-#include <vector>
+#include "align/Variant.h"
 
-using std::vector;
+#include <cassert>
 
-VariantIndex::VariantIndex(vector<Variant> &variantList, size_t highestPosition) :
+VariantIndex::VariantIndex(std::vector<Variant> &variantList, size_t highestPosition) :
     variantList(variantList) {
     // initialize private members
     size_t blockCount = (highestPosition >> 6) + 1; // one block for each 64 positions in reference
-    existsVariant = vector<unsigned long long>(blockCount);
-    listPositions = vector<size_t>(blockCount);
-    listOffset = vector<vector<size_t> >(blockCount, vector<size_t>(0));
+    existsVariant = std::vector<unsigned long long>(blockCount);
+    listPositions = std::vector<size_t>(blockCount);
+    listOffset = std::vector<std::vector<size_t>>(blockCount, std::vector<size_t>(0));
 
     // fill existence bitvector with zeroes
     for (size_t i = 0; i < blockCount; i++) {

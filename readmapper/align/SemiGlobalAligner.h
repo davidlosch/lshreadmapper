@@ -1,13 +1,18 @@
-#ifndef PG583_SEMIGLOBALALIGNER_H
-#define PG583_SEMIGLOBALALIGNER_H
+#ifndef PG583_ALIGN_SEMI_GLOBAL_ALIGNER_H
+#define PG583_ALIGN_SEMI_GLOBAL_ALIGNER_H
 
 #include "align/VariantIndex.h"
-#include "align/BacktracingMatrix.h"
 #include "align/Alignment.h"
 #include "Chromosome.h"
 #include "types.h"
 
 #include <seqan/sequence.h>
+
+#include <vector>
+#include <stddef.h>
+
+class BacktracingMatrix;
+class BacktracingColumn;
 
 class SemiGlobalAligner {
 private:
@@ -20,7 +25,7 @@ private:
                          const ReadString &pattern,
                          BacktracingMatrix &b,
                          int position);
-    BacktracingColumn &alignInsertion(const Variant &variant,
+    BacktracingColumn& alignInsertion(const Variant &variant,
                         const ReadString &pattern,
                         int maxError,
                         size_t lastRowArg,
@@ -37,4 +42,4 @@ public:
     int charDistance(seqan::Iupac p, seqan::Iupac t) const;
 };
 
-#endif // PG583_SEMIGLOBALALIGNER_H
+#endif // PG583_ALIGN_SEMI_GLOBAL_ALIGNER_H

@@ -1,11 +1,10 @@
-#ifndef PG583_VARIANTINDEX_H
-#define PG583_VARIANTINDEX_H
-
-#include "align/Variant.h"
+#ifndef PG583_ALIGN_VARIANTINDEX_H
+#define PG583_ALIGN_VARIANTINDEX_H
 
 #include <vector>
-#include <cstddef>
-#include <assert.h>
+#include <stddef.h>
+
+class Variant;
 
 struct Interval {
     size_t start;
@@ -27,4 +26,4 @@ private:
     unsigned int popcount(unsigned long long x) const;
 };
 
-#endif // PG583_VARIANTINDEX_H
+#endif // PG583_ALIGN_VARIANTINDEX_H

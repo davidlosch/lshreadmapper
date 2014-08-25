@@ -3,9 +3,6 @@
 
 #include <seqan/sequence.h>
 
-#include <string>
-#include <unordered_map>
-
 #define USE_PACKED_IUPAC_STRING
 #ifdef USE_PACKED_IUPAC_STRING
 typedef seqan::Iupac ReferenceChar;
@@ -13,6 +10,7 @@ typedef seqan::String<ReferenceChar, seqan::Packed<>> ReferenceString;
 typedef seqan::Dna5/*Iupac*/ ReadChar;
 typedef seqan::String<ReadChar/*, seqan::Packed<>*/> ReadString;
 #else
+#include <string>
 typedef char ReferenceChar;
 typedef char ReadChar;
 typedef std::basic_string<ReferenceChar> ReferenceString;

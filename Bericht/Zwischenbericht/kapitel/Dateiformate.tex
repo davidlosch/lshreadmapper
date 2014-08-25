@@ -1,32 +1,368 @@
 % Dateiformate.tex
 \chapter{Dateiformate}
 \label{sec:data}
-\marginpar{Jan}
-Zur Speicherung der Sequenzen existieren eine Reihe von standardisierten Dateiformaten mit unterschiedlichen Stärken und Schwächen. Im folgenden Abschnitt wird auf die wichtigsten Eigenschaften der verwendeten Spezifikationen eingegangen.
+\marginpar{Marcel}
+Zur Speicherung der bei der DNA-Sequenzierung anfallenden Daten haben sich im Laufe der Jahre diverse De-facto-Standards~\citep{Cock2010} herausgebildet.
+Die rohen Sequenzen und die daraus aufbereiteten Daten liegen dabei meist in menschenlesbaren Textdateien vor.
+
+In diesem Kapitel sollen die von uns verwendeten Dateiformate beschrieben werden.
+Hierzu zählen das \textbf{FASTA}-Format in dem das Referenzgenom vorliegt sowie das \textbf{FASTQ}-Format, welches für die Reads verwendet wird.
+Weiterhin werden die zum Referenzgenom bekannten Varianten als \textbf{VCF}-Dateien bereitgestellt.
+Das \textbf{SAM}- bzw. \textbf{BAM}-Format wird letztlich zur Ausgabe der Alignierungen der Reads verwendet.
+
+\section{IUPAC-Alphabet}
+\label{sec:data:iupac}
+\marginpar{Jan,\\ Marcel}
+Bevor die eigentlichen Dateiformate beschrieben werden, soll hier auf eine allgemein verwendete textuelle Darstellung der DNA eingegangen werden.
+
+Die Kodierung der Nukleinbasensequenzen erfolgt grundsätzlich als String über dem Alphabet $\Sigma = \lbrace A, C, T, G \rbrace$.
+Da jedoch die DNA-Sequenzierung fehlerbehaftet ist und mehr als ein einziges Referenzgenom existiert, gibt es das Bedürfnis nach einem erweitertem Alphabet.
+Die \textit{International Union of Pure and Applied Chemistry}~\citep{Iupac} empfahl die Verwendung ihres Alphabets, welches gemeinhin als \textbf{IUPAC-Alphabet} bezeichnet wird.
+\begin{table}[htbp]
+    \begin{center}
+    \begin{tabular}{|clcccc|}
+        \hline
+        IUPAC-Symbol & Zusammensetzung & \textbf{G} & \textbf{C} & \textbf{A} & \textbf{T} \\
+        \hline
+        U & \textbf{Uracil} & 0 & 0 & 0 & 0 \\
+        \rowcolor{green} T & \textbf{Thymin} & 0 & 0 & 0 & 1 \\
+        \rowcolor{green} A & \textbf{Adenin} & 0 & 0 & 1 & 0 \\
+        W & A, T & 0 & 0 & 1 & 1 \\
+        \rowcolor{green} C & \textbf{Cytosin} & 0 & 1 & 0 & 0 \\
+        Y & C, T & 0 & 1 & 0 & 1 \\
+        M & A, C & 0 & 1 & 1 & 0 \\
+        H & C, A, T & 0 & 1 & 1 & 1 \\
+        \rowcolor{green} G & \textbf{Guanin} & 1 & 0 & 0 & 0 \\
+        K & G, T & 1 & 0 & 0 & 1 \\
+        R & A, G & 1 & 0 & 1 & 0 \\
+        D & A, G, T & 1 & 0 & 1 & 1 \\
+        S & C, G & 1 & 1 & 0 & 0 \\
+        B & C, G, T & 1 & 1 & 0 & 1 \\
+        V & A, C, G & 1 & 1 & 1 & 0 \\
+        N & A, C, G, T & 1 & 1 & 1 & 1 \\
+        \hline
+    \end{tabular}
+    \end{center}
+    \caption{IUPAC-Alphabet und Binärkodierung der Kombinationen von Nukleinbasen}
+    \label{tab:data:iupac}
+\end{table}
+Zusätzlich zu den eindeutigen Basenzuordnungen werden, wie in Tabelle~\ref{tab:data:iupac} zu sehen, eine Reihe zusätzlicher Zeichen eingeführt, welche das mögliche Vorhandensein mehrerer Basen an einer Position beschreiben.
+Durch diese Ein-Zeichen-Kodierung kann immer noch einer Position im DNA-Strang genau ein Zeichen im IUPAC-String zugeordnet werden.
+
+Das IUPAC-Alphabet wird in allen nachfolgend beschriebenen Dateiformaten verwendet.
+Neben den Zeichen $A, C, G, T$, welche die eindeutige Zuordnung der jeweiligen Basen aufzeigen, kommt dem Zeichen $N$ noch eine besondere Bedeutung zugute.
+An einer Position im IUPAC-String, welche mit einem $N$ kodiert ist, kann jede beliebige der vier Basen auftreten.
+Daher wird dieses Zeichen auch als Anzeiger für Lücken (engl.: gaps) im Referenzgenom sowie nicht eindeutig sequenzierte Basen in Reads verwendet.
+
+Durch die Verwendung einer Vier-Bit-Kodierung, die ebenfalls in Tabelle~\ref{tab:data:iupac} dargestellt ist, kann das mögliche Vorhandensein einer Base an einer Position mittels einfacher Bitoperationen (bitweisem UND) überprüft werden.
+Die in der Tabelle dargestellten Bitmuster werden auch von uns zur Behandlung der SNPs bei der Alignierung (siehe Abschnitt \ref{sec:align:variants:snp}) benutzt.
+
 \section{FASTA}
 \label{sec:data:fasta}
-\marginpar{Jan}
-Ein sehr einfaches Dateiformat für die Speicherung einer einzelnen DNA-Sequenz ist das \textbf{FASTA-Format}. Es zeichnet sich durch eine sehr einfache Struktur aus, da es nur aus einer Zeile mit Identifikationsdaten und der eigentlichen Sequenz besteht. Der Inhalt der ersten, beschreibenden Zeile ist frei wählbar. Es existieren jedoch verschiedene Richtlinien der Gestaltung, die von den jeweiligen Datenanbietern vorgegeben werden.
+\marginpar{Marcel}
+Reine DNA-Sequenzen, wie etwa das beim Read-Mapping verwendete Referenzgenom, werden üblicherweise im \textbf{FASTA}-Format gespeichert.
+Es stellt ein sehr einfach gehaltenes Textformat dar, welches lediglich aus zwei Komponenten besteht.
+Die erste Zeile eines FASTA-Eintrags wird mit dem ASCII-Zeichen \texttt{>} eingeleitet und dient zur Identifizierung der Sequenz.
+Alle weiteren Zeilen bilden aneinandergefügt die eigentliche Sequenz.
+
+Obwohl das FASTA-Format als De-facto-Standard gilt, existiert kein explizites, den Standard beschreibendes Dokument~\citep{Cock2010}.
+Ursprünglich wurde das Format als Eingabe für das gleichnamige Programm entwickelt, welches der Suche und dem Vergleich von DNA- und Aminosäuresequenzen dient~\citep{Pearson1988}.
+
+Der Inhalt der ersten Zeile ist nach dem \texttt{>} frei wählbar.
+Es existieren jedoch verschiedene Richtlinien zu ihrer Gestaltung, die von den jeweiligen Datenanbietern vorgegeben werden.
+Die nachfolgende Sequenz kann entweder eine nach dem oben beschriebenen IUPAC-Alphabet kodierte Nukleotidsequenz sein, oder sie beschreibt eine Aminosäuresequenz.
+Da für unsere Zwecke nur die DNA-Sequenzen von Belang sind, wird hier nicht weiter auf die Kodierung der Aminosäuren eingegangen.
+Für Basensequenzen sind die in Tabelle~\ref{tab:data:iupac} aufgeführten IUPAC-Zeichen sowohl in Groß- als auch Kleinschreibung gültige Zeichen.
+Die kleingeschriebenen Zeichen sind prinzipiell mit ihren Großbuchstabenpendants identisch, werden allerdings auch zur zusätzlichen Kennzeichnung von sich wiederholenden Abschnitten (engl.: repeats) im Humangenom verwendet.
+Zusätzlich zu den IUPAC-Zeichen ist noch der Bindestrich \texttt{-} als Zeichen erlaubt, welcher für eine Lücke unbestimmter Länge in der Sequenz steht.
+
+In einer FASTA-Datei können zudem mehrere Sequenzen gespeichert sein, indem einfach die zuvor beschriebenen FASTA-Einträge aneinandergehängt werden, sodass jede Sequenz mit einer mit \texttt{>} beginnenden Zeile eingeleitet wird.
+Dadurch kann etwa das gesamte menschliches Genom in einer FASTA-Datei gespeichert sein, die aus mehreren, den Chromosomen (sowie dem Mitochondrium) entsprechenden Sequenzeinträgen besteht.
+
 \section{FASTQ}
 \label{sec:data:fastq}
-\marginpar{Jan}
-Eine Erweiterung des FASTA-Formats ist das Dateiformat \textbf{FASTQ}, welches die DNA-Sequenz um Qualitätsangaben für die korrekte Erfassung der jeweiligen Basen erweitert. 
+\marginpar{Jan,\\ Marcel}
+Reads werden gemeinhin im \textbf{FASTQ}-Format gespeichert, welches das FASTA-Format um Qualitätsangaben für die korrekte Erfassung der jeweiligen Basen erweitert.
+Ebenso wie FASTA ist auch FASTQ ein De-facto-Standard ohne explizite Spezifikation.
+Aufgrund dessen haben \citet{Cock2010} eine ausführliche Beschreibung des Formates geliefert, welche als Spezifikationsersatz dienen soll.
 
-Für die Angabe der Qualitätswerte existieren verschiedene Metriken der Interpretation. Eine häufig verwendete Metrik, bezeichnet als \textbf{Sanger-} oder \textbf{Phred}-Qualitätswert, berechnet sich wie folgt \citep{Ewing1998}:
+Für die Angabe der Sequenzierqualität der einzelnen Basen existieren verschiedene Metriken.
+Eine häufig verwendete Metrik, bezeichnet als \textbf{Sanger-} oder \textbf{Phred}-Qualitätswert, berechnet sich wie folgt \citep{Ewing1998}:
 \begin{equation}
-	Q = -10 \log_{10} P
+    Q = -10 \log_{10} P
 \end{equation}
-Dabei bezeichnet $P$ die Wahrscheinlichkeit, dass die zugehörige Base falsch erfasst wurde. Ein Qualitätswert von $30$ repräsentiert somit eine Fehlerrate von $0.1 \%$. Je nach verwendeter Sequenziermaschine liegen die üblichen Werte in den Intervallen $(33, 73)$ und $(64, 104)$. % TODO: Wie wird die Fehlerwahrscheinlichkeit gemessen? (siehe in \citet{Ewing1998}). 
+Dabei bezeichnet $P$ die Wahrscheinlichkeit, dass die zugehörige Base falsch erfasst wurde.
+Ein Qualitätswert von $30$ repräsentiert somit eine Fehlerrate von $0.1 \%$.
 
-Die Umrechnung der Fehlerwahrscheinlichkeiten in diese Qualitätswerte wird aus Platzgründen vollzogen. Die Qualitätswerte lassen sich einfach durch ihre jeweilige ASCII-Repräsentation kodieren. Ein Wert von $33$ entspräche beispielsweise dem ~Zeichen \textit{!}, ein Wert von 104 einem \textit{h}. Die kodierte Angabe für jede sequenzierte Base wird in derselben Reihenfolge in der Datei festgehalten, so dass eine zeichengenaue Zuordnung möglich ist.
-\section{SAM/BAM}
-\label{sec:data:sambam}
-\marginpar{Marcel}
+Die Umrechnung der Fehlerwahrscheinlichkeiten in diese Qualitätswerte wird aus Platzgründen vollzogen.
+Die Qualitätswerte lassen sich einfach durch ihre jeweilige ASCII-Repräsentation kodieren.
+Ein Wert von 33 entspräche beispielsweise dem Zeichen \texttt{!}, ein Wert von 104 einem \texttt{h}.
+Die kodierte Angabe wird für jede sequenzierte Base in derselben Reihenfolge in der Datei festgehalten, so dass eine zeichengenaue Zuordnung möglich ist.
 
-\subsection{CIGAR-String}
-\label{sec:data:cigar}
-\marginpar{Marcel}
+Ein Eintrag in einer FASTQ-Datei besteht aus vier Komponenten.
+Die erste Zeile dient, entsprechend dem FASTA-Format, als Identifikation, wird allerdings mit dem Zeichen \texttt{@} anstatt \texttt{>} eingeleitet.
+Die zweite Komponente ist wie bei FASTA-Einträgen die Sequenz, welche sich über mehrere Zeilen erstrecken darf.
+Als Drittes folgt eine Zeile, welche mit einem \texttt{+} eingeleitet wird und optional eine Kopie der Identifikationsdaten aus der ersten Zeile enthält.
+Meist besteht diese Zeile nur aus einem \texttt{+}, da aus Speicherplatzgründen auf die redundante Kopie verzichtet wird.
+Die letzte Komponente besteht aus der Konkatenation der Qualitätswerte aller Sequenzpositionen, welche nach dem oben beschriebenen Verfahren als ASCII-Zeichen kodiert sind.
+
+Anzumerken ist noch, dass auch die Zeichen \texttt{@} und \texttt{+} bei der Kodierung der Qualitätswerte verwendet werden.
+Daher kann nicht davon ausgegangen werden, dass jede Zeile, die mit einem der beiden Zeichen beginnt, eine der Identifikationszeilen ist.
+Aufgrund dessen wird angeraten die Sequenz- und Qualitätsstrings ohne Zeilenumbrüche zu speichern, um ein einfaches Parsing der FASTQ-Dateien zu ermöglichen.
 
 \section{VCF}
 \label{sec:data:vcf}
 \marginpar{Marcel}
+Im "`Variant Call Format"' (\textbf{VCF}) können genetische Variationen in Bezug zum Referenzgenom kompakt gespeichert werden\citep{Danecek2011}.
+Im Grunde besteht das Format aus einer tabulatorseparierten Textdatei, welche zeilenweise die Unterschiede der Varianten zum Referenzgenom unter Angabe der betreffenden Referenzpositionen beschreibt.
+
+Die VCF-Dateien beginnen mit einem Dateikopf, der eine beliebige Anzahl von Zeilen umfasst, welche mit den Zeichen \texttt{\#\#} eingeleitet werden und Metainformationen beinhalten.
+Weiterhin gehört noch eine mit einem einzigen \texttt{\#} beginnende Zeile zum Dateikopf, die den Tabellenkopf für die nachfolgenden Varianteneinträge enthält.
+
+Es gibt acht zwingend erforderliche Spalten im VC-Format.
+Die Spalte \emph{CHROM} gibt das zugehörige Chromosom und \emph{POS} die Position im Chromosom an, an welcher die Variante beginnt.
+In der Spalte \emph{ID} kann der Variante eine eindeutige Identifikation zugewiesen werden.
+\emph{REF} gibt einen Ausschnitt aus der Referenz, beginnend bei Position \emph{POS}, an, welcher durch die Varianten ersetzt wird.
+In \emph{ALT} wird eine kommaseparierte Liste an alternativen Allelen angegeben, welche \emph{REF} ersetzen.
+In den Spalten \emph{QUAL} und \emph{FILTER} können zum einen Wahrscheinlichkeiten bezüglich des Auftretens einer der Varianten in Phredskalierung und zum anderen Informationen über angewandte Filter abgelegt werden.
+Die letzte erforderliche Spalte \emph{INFO} besteht aus einer Liste von semikolonseparierten Metainformationseinträgen, welche zuvor im Dateikopf beschrieben werden sollten.
+
+In einer VCF-Datei können zudem noch Informationen von einzelnen Samples und der dort vorkommenden Genotypen vorhanden sein.
+Hierzu existiert noch eine neunte Spalte \emph{FORMAT} und für jedes Sample je eine weitere Spalte.
+Die \emph{FORMAT}-Spalte gibt hierbei die Formatierung der nachfolgenden Spalten an.
+Die von uns verwendeten VCF-Dateien beinhalten keine Samples, sodass dort nur die ersten acht Spalten vorhanden sind.
+
+Nach dem Tabellenkopf, welcher den Dateikopf abschließt, folgen zeilenweise die variantenbeschreibenden Einträge der VCF-Datei.
+Jede Zeile hat hierbei ebenso viele mit Tabulatoren getrennte Spalten wie der Tabellenkopf.
+In allen Spalten bis auf \emph{CHROM}, \emph{POS} und \emph{REF} kann jedoch durch Angabe eines Punktes (\texttt{.}) ein Auslassen des entsprechenden Tabelleneintrags gekennzeichnet werden.
+
+Die für uns wichtigsten Spalten sind die positionsangebenden \emph{CHROM} und \emph{POS} sowie \emph{REF} und \emph{ALT}, welche die Arten der Varianten beschreiben.
+Die Spalte \emph{CHROM} beinhaltet üblicherweise eine Zeichenkette aus $\left\{1,2,\dots,22,X,Y,M\right\}$, welche das jeweilige Chromosom angibt ($M$ stehen hierbei für das Mitochondrium).
+\emph{POS} gibt die Position der Variante im Chromosom an, wobei Position 1 die erste Base des Chromosoms anzeigt.
+Die Varianten müssen je Chromosom in der VCF-Datei aufsteigend nach der Position geordnet vorliegen.
+Mehrere Einträge mit derselben Positionsangabe sind durchaus zulässig.
+Für jedes Chromosom sollten zudem alle Varianten in einem zusammenhängendem Bereich vorkommen. % "sollten" steht auch im Standard...
+Für genauere Einschränkung bezüglich zugelassener Zeichen in den Chromosomenbezeichnern oder Sonderfälle für die Positionsangaben sei hier auf die VCF-Spezifikation~\citep{vcfspec} verwiesen.
+
+Die Varianten werden durch Angabe des in der Referenz vorkommenden Allels in \emph{REF} sowie dazu alternativen Allele in Spalte \emph{ALT} beschrieben.
+Falls mehrere alternative Allele angegeben werden, sind diese durch Kommata getrennt.
+Die Allele werden jeweils als Text über den IUPAC-Zeichen $\left\{A,C,G,T,N\right\}$ (ohne Beachtung der Groß- und Kleinschreibung) dargestellt.
+Die Allele der \emph{ALT}-Spalte stellen hierbei eine Ersetzung des \emph{REF}-Strings im Referenzgenom dar.
+Abweichende Darstellungen sind nur für die von uns nicht verwendeten strukturellen Varianten vorhanden, welche ebenfalls in vielfältiger Weise vom VC-Format unterstützt werden.
+Die von uns genutzten kleineren Varianten sind wie folgt vorzufinden:
+Im einfachsten Fall, bei den SNPs, bestehen die Allele jeweils nur aus den einzelnen Basen.
+Im Falle der kurzen Indels stimmt jeweils das erste Zeichen aller Allele überein, bevor eine beliebigen Anzahl weiterer Zeichen die Variante darstellt.
+Das übereinstimmende Zeichen befindet sich im Chromosom an der Position \textit{POS} und führt dazu, dass die Allele nicht durch leere Zeichenketten repräsentiert werden.
+Einziger Sonderfall ist hierbei eine Variante an Position 1, der kein Zeichen vorangehen kann, sodass hierbei das erste nachfolgend übereinstimmende Zeichen angehangen wird.
+
+\begin{figure}[htbp]
+    \begin{center}
+    \begin{footnotesize}
+\begin{BVerbatim}
+##fileformat=VCFv4.1
+##fileDate=20110413
+##source=VCFtools
+##reference=file:///refs/human_NCBI36.fasta
+##contig=<ID=1,length=249250621,species="Homo Sapiens">
+##contig=<ID=X,length=155270560,species="Homo Sapiens">
+##INFO=<ID=AA,Number=1,Type=String,Description="Ancestral Allele">
+##INFO=<ID=H2,Number=0,Type=Flag,Description="HapMap2 membership">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,NUmber=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
+##ALT=<ID=DEL,Description="Deletion">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the variant">
+#CHROM POS ID     REF  ALT   QUAL FILTER INFO               FORMAT SAMPLE1 SAMPLE2
+1        1  .     ACG  A,AT  40   PASS   .                  GT:DP  1/1:13  2/2:29
+1        2  .     C    T,CT  .    PASS   H2;AA=T            GT     0|1     2/2
+1        5  rs12  A    G     67   PASS   .                  GT:DP  1|0:16  2/2:20
+X      100  .     T    <DEL> .    PASS   SVTYPE=DEL;END=299 GT:GQ  1:12:.  0/0:20
+\end{BVerbatim}
+        \end{footnotesize}
+    \end{center}
+    \caption{Beispiel einer VCF-Datei (aus \citep{Danecek2011}).}
+    \label{fig:data:vcf:example}
+\end{figure}
+\begin{table}[htbp]
+    \begin{center}
+    {\ttfamily\footnotesize
+    \begin{tabular}{>{\rmfamily\normalsize}l|llll|l}
+    Variantentyp & \multicolumn{4}{c|}{\rmfamily\normalsize VCF-Eintrag (Ausschnitt)} & {\rmfamily\normalsize Alignierung}\\
+    \hline
+    & POS & REF & ALT & INFO & \\
+    \hline
+    Referenz (\texttt{chr1:1..5})    &     &     &       &                    & AC-GTA\\
+    Deletion                         &   1 & ACG & A     & .                  & A\textcolor{red}{-}-{}\textcolor{red}{-}TA\\
+    Ersetzung                        &   1 & ACG & AT    & .                  & A\textcolor{red}{T}-{}\textcolor{red}{-}TA\\
+    SNP                              &   2 & C   & T     & .                  & A\textcolor{red}{T}-GTA\\
+    Insertion                        &   2 & C   & CT    & .                  & AC\textcolor{red}{T}GTA\\
+    SNP                              &   5 & A   & G     & .                  & AC-GT\textcolor{red}{G}\\
+    \hline
+    Referenz (\texttt{chrX:99..301}) &     &     &       &                    & GTAC[...]ACGT\\
+    Strukt. Variante (Del.)          & 100 & T   & <DEL> & SVTYPE=DEL;END=299 & GT\textcolor{red}{-{}-[...]-{}-}GT
+    \end{tabular}
+    }
+    \end{center}
+    \caption{Aufschlüsselung der Variantentypen der Einträge aus Tabelle~\ref{fig:data:vcf:example}.}
+    \label{tab:data:vcf:example}
+\end{table}
+In Abbildung~\ref{fig:data:vcf:example} ist ein Beispiel einer VCF-Datei angegeben.
+Hier ist zu sehen, dass in dem Dateikopf eine Fülle von Informationen zum Ursprung (\texttt{fileformat}, \texttt{filedate}, \texttt{source}, \texttt{reference}, \texttt{contig}) und zur Formatierung (den Spalten entsprechend \texttt{ALT}, \texttt{INFO}, \texttt{FORMAT}) der Daten angegeben werden kann.
+Hierbei ist einzig der Eintrag \texttt{fileformat} nach Spezifikation zwingend erforderlich.
+Allerdings empfiehlt die Spezifikation jegliche später in den Spalten der Varianteneinträge verwendete Bezeichner auch im VCF-Kopf anzugeben.
+
+Die im Beispiel beschriebenen Varianten sind in Tabelle~\ref{tab:data:vcf:example} mit ihren entsprechenden Alignierungen am Referenzgenom aufgeschlüsselt.
+Unterschiede zur Referenz sind in der Alignierung farblich hervorgehoben.
+Im Beispiel finden sich also im zweiten (\texttt{C} $\rightarrow$ \texttt{T}) und dritten (\texttt{A} $\rightarrow$ \texttt{G}) VCF-Eintrag SNPs.
+Eine Deletion (\texttt{ACG} $\rightarrow$ \texttt{A}) ist im ersten Eintrag, eine Insertion (\texttt{C} $\rightarrow$ \texttt{CT}) im Zweiten gegeben.
+Abgesehen von einfachen SNPs oder Indels können auch noch, wie im zweiten Allel der ersten Zeile zu sehen, komplexere mehrbasige Ersetzungen gepaart mit Indels (\texttt{ACG} $\rightarrow$ \texttt{AT}) auftreten.
+Die letzte Zeile zeigt eine einfache strukturelle Variante (Deletion) und soll hier nur ein kleines Beispiel zu einer der vielseitigen Notationen für strukturelle Varianten (lange Deletionen oder Insertionen, Inversionen, Tandemrepeats, etc.) aufzeigen. 
+
+\section{SAM / BAM}
+\label{sec:data:sambam}
+\marginpar{Marcel}
+Das "`Sequence Alignment/Mapping"'-Format (\textbf{SAM}) wird zur Ausgabe der Alignierungen verwendet.
+Vergleichbar mit dem VC-Format werden auch hier Textdateien verwendet, welche nach einem Kopfbereich die einzelnen Einträge zeilenweise bereitstellen.
+Die Informationen pro Eintrag sind ebenso tabellenartig angeordnet und durch Tabulatoren getrennt.
+
+Jede Zeile im Dateikopf wird mit einem \texttt{@} eingeleitet, auf das ein Zweibuchstabenidentifikator und ein Tabulator folgt.
+Den Rest der Zeile bilden tabulatorgetrennte Einträge, welche aus Schlüssel\texttt{:}Werte-Paaren bestehen.
+Die Schlüssel bestehen aus zwei Buchstaben oder einem Buchstaben gefolgt von einer Ziffer und sind durch einen Doppelpunkt (\texttt{:}) vom dazugehörigen Wert getrennt.
+
+Die Spezifikation~\citep{samspec} gibt folgende fünf Kopfeinträge vor:
+\begin{itemize}
+    \item Die \texttt{@HD}-Zeile gibt die SAM-Formatversion sowie eventuelle Sortierreihenfolge der Einträge an.
+    \item In einer \texttt{@SQ}-Zeile werden ein eindeutiger Name und die Länge einer Referenzsequenz angegeben.
+    Zusätzlich können in \texttt{@SQ} auch noch Angaben zur Spezies und des zugehörigen Referenzgenoms (Assembly Identifier) sowie eine Prüfsumme der Sequenz und eine URI (HTTP, FTP oder lokales Dateisystem) eingetragen werden.
+    \item \texttt{@RG} beinhaltet Informationen zu einer Gruppe von Reads.
+    Neben einer eindeutigen Kennung können noch weitere Informationen zur Herkunft der Reads, wie Institutsname, Datum, verwendete Geräte und Programme, angegeben werden.
+    \item In den \texttt{@PG}-Zeilen können verwendete Programme, die zur Erzeugung der Alignierungen benutzt wurden, beschrieben werden.
+    Zusätzlich zu Programmname, -version, -parametern, -beschreibung und einer eindeutigen Kennung sind Verweise auf andere \texttt{@PG}-Zeilen möglich, sodass die Reihenfolge, in der die Programme benutzt wurden, festgehalten werden kann.
+    \item Zuletzt können noch mittels \texttt{@CO} beliebige Kommentarzeilen eingeleitet werden, in denen die Angabe von Schlüssel\texttt{:}Werte-Paaren nicht nötig ist.
+\end{itemize}
+Jegliche Zeilen im Dateikopf sind optional, außer sie werden im Falle von \texttt{@SQ}, \texttt{@RG} oder \texttt{@PG} in den Alignierungseinträgen mit ihren eindeutigen Bezeichnern referenziert.
+Des Weiteren können außer den genannten fünf Typen noch beliebige, vom Benutzer definierte Einträge benutzt werden.
+
+Die einzelnen Alignierungen der Reads werden nach dem Kopfbereich zeilenweise angegeben.
+Jeder Eintrag hat folgende elf notwendige Spalten:
+\begin{enumerate}
+\item \texttt{QNAME}: Name des betrachteten Reads.
+\item \texttt{FLAG}: Bitfeld, welches Informationen über den Status der Alignierung kompakt beschreibt. Hierzu zählen, ob der Read überhaupt gemappt werden konnte, in welche Richtung (Vorwärtsstrang oder reverses Komplement) aligniert wurde, und weitere Informationen über andere Alignierungseinträge, welche in Verbindung mit dem aktuellen Eintrag stehen.
+\item \texttt{RNAME}: Name der Referenzsequenz, welche zuvor in Dateikopf in einer \texttt{@SQ}-Zeile angegeben wurde.
+\item \texttt{POS}: Anfangsposition der Alignierung in der Referenzsequenz (erste Position der Referenz hat den Wert 1).
+\item \texttt{MAPQ}: Phredskalierte Qualitätsangabe des Mappings.
+\item \texttt{CIGAR}: Beschreibung die eigentliche Alignierung als Folge von Editieroperationen, was in Abschnitt~\ref{sec:data:cigar} genauer beschrieben wird.
+\item \texttt{RNEXT}: Bei zueinandergehörenden Reads wird hier die Referenzsequenz des nächsten Reads angegeben, oder \texttt{=}, falls \texttt{RNEXT} identisch mit \texttt{RNAME} ist.
+\item \texttt{PNEXT}: Analog zu \texttt{RNEXT} gibt \texttt{PNEXT} die zugehörige Position des nächsten Reads an.
+\item \texttt{TLEN}: Länge des Referenzabschnittes, welcher durch alle mittels \texttt{RNEXT}, \texttt{PNEXT} angegebenen zugehörigen Reads abgedeckt wird, oder 0, falls verschiedene Referenzen angegeben wurden, bzw. keine anderen zugehörigen Reads existieren. Für den Read ganz rechts im Abschnitt wird der Wert negiert, beim Read ganz links ist der Wert positiv.
+\item \texttt{SEQ}: Beinhaltet die Sequenz des Reads, dem FASTQ-Format entsprechend. Falls das reverse Komplement aligniert wurde, wird hier ebenso das reverse Komplement des Reads angegeben.
+\item \texttt{QUAL}: Beinhaltet die Sequenzierqualitätswerte zu \texttt{SEQ}, dem FASTQ-Format entsprechend.
+\end{enumerate}
+Auch wenn die Angabe aller dieser Felder notwendig ist, können sie je nach Feld entweder durch ein \texttt{*} oder eine \texttt{0} ersetzt werden, um ein Nichtvorhandensein des entsprechenden Wertes anzuzeigen.
+So können zum Beispiel auch Reads ohne Mapping abgespeichert werden, in dem \texttt{RNAME} auf \texttt{*} gesetzt wird.
+
+Nach den elf vorgegebenen Spalten folgt eine beliebige Anzahl optionaler, auch durch den Benutzer festlegbarer Felder.
+Diese werden ähnlich zu den Schlüssel\texttt{:}Werte-Paaren im Kopfbereich als Schlüssel\texttt{:}Typ\texttt{:}Wert angegeben.
+Ein Schlüssel darf hierbei nur einmal pro Alignierung verwendet werden.
+Im Gegensatz zum Dateikopf wird in den Feldern noch der Datentyp der Werte (Zeichenketten, Fließkomma- oder ganze Zahlen, Bit- oder Zahlenfelder, etc.) spezifiziert.
+Hier können somit etwa die verwendeten Programme mit \texttt{PG:Z:Programmbezeichner} oder die Readgruppen mit \texttt{RG:Z:Readgruppenbezeichner} angegeben werden.
+Das \texttt{Z} steht hierbei für den Datentyp eines Strings, welcher aus druckbaren Zeichen und dem Leerzeichen bestehen kann.
+Eine Fülle von vordefinierten optionalen Feldern finden sich in der Spezifikation des SAM-Formates~\citep{samspec}.
+Die Spezifikation gibt allerdings dem Benutzer auch hier wieder die Möglichkeit, eigene Felder für seine Zwecke zu definieren.
+
+\begin{figure}[htbp]
+    \begin{center}
+    \begin{footnotesize}
+\begin{BVerbatim}
+Coor     12345678901234  5678901234567890123456789012345
+ref      AGCATGTTAGATAA**GATAGCTGTGCTAGTAGGCAGTCAGCGCCAT
+
++r001/1        TTAGATAAAGGATA*CTG
++r002         aaaAGATAA*GGATA
++r003       gcctaAGCTAA
++r004                     ATAGCT..............TCAGC
+-r003                            ttagctTAGGC
+-r001/2                                        CAGCGGCAT
+\end{BVerbatim}
+    \end{footnotesize}
+    \end{center}
+    \caption{Beispiel mehrerer Alignierungen an einer Referenz (aus \citep{samspec}).}
+    \label{fig:data:sam:align}
+\end{figure}
+\begin{figure}[htbp]
+    \begin{center}
+    \begin{footnotesize}
+\begin{BVerbatim}
+@HD VN:1.5 SO:coordinate
+@SQ SN:ref LN:45
+r001  163 ref  7 30 8M2I4M1D3M = 37  39 TTAGATAAAGGATACTG *
+r002    0 ref  9 30 3S6M1P1I4M *  0   0 AAAAGATAAGGATA    *
+r003    0 ref  9 30 5S6M       *  0   0 GCCTAAGCTAA       * SA:Z:ref,29,-,6H5M,17,0;
+r004    0 ref 16 30 6M14N5M    *  0   0 ATAGCTTCAGC       *
+r003 2064 ref 29 17 6H5M       *  0   0 TAGGC             * SA:Z:ref,9,+,5S6M,30,1;
+r001   83 ref 37 30 9M         =  7 -39 CAGCGGCAT         * NM:i:1
+\end{BVerbatim}
+    \end{footnotesize}
+    \end{center}
+    \caption{SAM-Datei zu den Alignierungen aus Abbildung~\ref{fig:data:sam:align} (aus \citep{samspec}).}
+    \label{fig:data:sam:file}
+\end{figure}
+In Abbildung~\ref{fig:data:sam:align} ist eine Referenzsequenz mit sechs Alignierungen, die fünf Reads zugeordnet sind, zu sehen.
+Die Reads \texttt{r001/1} und \texttt{r001/2} bilden ein Readpaar.
+\texttt{r001/1} wurde mit je einer Insertion und einer Deletion, \texttt{r001/2} nach Bildung seines reversen Komplements fehlerfrei aligniert.
+Der Read \texttt{r002} wurden ab seinem vierten Zeichen unter Berücksichtigung einer Insertion aligniert.
+Read \texttt{r003} wurde ab seiner sechsten Base an Refenzposition neun mit einem Sequenzmismatch aligniert.
+Zusätzlich existiert noch eine Alignierung des reversen Komplements von \texttt{r003} ab seinem sechsten Zeichen an der Refenzposition 29.
+\texttt{r004} wurde mit Auslassung von 14 Zeichen der Referenzsequenz aligniert.
+Eine zu den beschriebenen Alignierungen gehörige SAM-Datei ist in Abbildung~\ref{fig:data:sam:file} dargestellt.
+Die Bedeutung der CIGAR-Strings, welche in Spalte sechs zu sehen sind, werden im nachfolgenden Abschnitt~\ref{sec:data:cigar} genauer beschrieben.
+
+Da SAM-Dateien nicht zuletzt durch die erneute Angabe der Readsequenzen und ihrer Qualitätswerte sehr groß seien können, wurde das \textbf{BAM}-Format als eine binäre und standardmäßig gzip-komprimierte Variante des SAM-Formats entwickelt.
+Das BAM-Format ist neben Kompaktheit auch auf hohe Verarbeitungsgeschwindigkeiten ausgelegt, indem neben offensichtlichen Verbesserungen gegenüber dem SAM-Format, wie der Repräsentation von Daten wie Zahlenwerten in Binär- statt Textform, auch noch andere Änderungen, wie etwa eine feste Spaltenanzahl, vorgenommen wurden.
+Der wohl größte Unterschied liegt allerdings bei der verwendeten \textbf{BGZF}-Komprimierung.
+Das BGZF-Format ist gzip-kompatibel und nutzt konkatenierte gzip-Dateien, um ein blockbasiertes Archivformat abzubilden.
+Die BGZF-Blöcke können im BAM-Format dazu verwendet werden, eine schnelle Extraktion von Alignierungen für bestimmte Abschnitte des Referenzgenoms vorzunehmen, ohne dass die komplette BAM-Datei ausgelesen werden muss.
+Hierzu werden die Alignierungseinträge zunächst nach den Referenzpositionen sortiert, um danach eine externe Indexdatei erzeugen zu können, welche eine Zuordnung der Referenzabschnitte auf die BGZF-Blöcke ermöglicht.
+
+\section{CIGAR-String}
+\label{sec:data:cigar}
+\marginpar{Marcel}
+Die Alignierungen werden im SAM-Format als eine Reihe von Editieroperationen mittels so genannter \textbf{CIGAR}-Strings angegeben.
+Ein CIGAR-Operation ist ein Ein-Zeichen-Code, welchem eine Zahl vorangestellt wird, die die Anzahl des Ausführungen der entsprechenden Operation angibt.
+Ein CIGAR-String ist eine Konkatenation von CIGAR-Operationen und zeigt an, welche Editieroperationen auf einer Referenz auszuführen sind, um einen Read an ihr alignieren zu können.
+
+\begin{table}[ht]
+    \begin{center}
+    \begin{tabular}{c|l}
+        Operation & Beschreibung \\
+        \hline
+        M & Alignierungsmatch (Match oder Mismatch der Sequenz)\\
+        = & Sequenzmatch\\
+        X & Sequenzmismatch\\
+        I & Insertion in Bezug zur Referenz\\
+        D & Deletion in Bezug zur Referenz\\
+        S & "`Soft Clipping"': abgeschnittene Sequenz nur im Read vorhanden\\
+        H & "`Hard Clipping"': abgeschnittene Sequenz nicht im Read vorhanden\\
+        N & Übersprungende Region der Referenz\\
+        P & "`Padding"': Deletion in der "`padded"' Referenz\\
+    \end{tabular}
+    \end{center}
+    \caption{CIGAR-Operationen gemäß der SAM-Spezifikation}
+    \label{tab:data:cigar}
+\end{table}
+Die SAM-Spezifikation~\citep{samspec} definiert die in Tabelle~\ref{tab:data:cigar} angegebenen Operationen.
+M, I, D und S sind dabei die meist benutzten Operationen.
+
+Auch wenn die Verwendung von = und X intuitiver erscheint, da durch diese genau Matches und Mismatches der Sequenzen beschrieben werden können, wird in der Regel die Operation M anstelle der beiden anderen benutzt.
+Für die Alignierung an sich, also die Ausrichtung der beiden Sequenzen zueinander, ist eine Angabe der Operation M genauso aussagekräftig wie die Angaben der separaten Match- und Mismatchoperationen auf der Sequenz.
+Dadurch kann die Ausgabe der Alignierung durch einen kompakteren CIGAR-String dargestellt werden, da alle aufeinanderfolgenden X- und =-Operationen zu einer Operation M zusammengefasst werden.
+
+Anstatt Sequenzmismatches am Anfang oder Ende eines Reads willkürlich als Insertionen oder Sequenzmismatches zu definieren, können diese als S-Operationen angegeben werden.
+Sinngemäß beschreiben die nur am Anfang oder Ende eines Reads vorkommenden S-Operationen, dass eine Alignierung stattgefunden hat, bei der der Read um die angegebene Anzahl von Zeichen zuvor gestutzt wurde.
+
+Die Operationen H, N und P werden seltener verwendet.
+Die Operation H, welche nur als allererste und allerletzte Operation im CIGAR-String vorkommen kann, gibt ebenfalls an, dass der Read um die angegebene Anzahl von Basen gestutzt wurde. Im Gegensatz zur S-Operation werden die abgeschnitten Zeichen jedoch in der im SAM-Eintrag gespeicherten Sequenz gelöscht.
+Mittels Operation N können bei Alignierungen von mRNA zu DNA die Auslassungen von Introns beschrieben werden.
+Operation P wird bei Alignierungen im SAM-Format mit "`Padding"' verwendet.
+Das Padding findet für unsere Zwecke keine Verwendung und wird im SAM-Format in der Regel für De-novo-Assemblierungen benutzt, bei der die Referenz durch Padding aufgefüllt wird, um Insertion anzuzeigen.

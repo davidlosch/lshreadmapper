@@ -1,8 +1,7 @@
-#ifndef PG583_VARIANTSREADER_H
-#define PG583_VARIANTSREADER_H
+#ifndef PG583_IO_VARIANTS_READER_H
+#define PG583_IO_VARIANTS_READER_H
 
-#include "Chromosome.h"
-#include "types.h"
+#include "Logger.h"
 
 #include <seqan/sequence.h>
 #include <seqan/vcf_io.h>
@@ -11,6 +10,10 @@
 #include <unordered_set>
 #include <string>
 #include <vector>
+#include <iostream>
+#include <stddef.h>
+
+class Chromosome;
 
 class VariantsReader {
     enum class AltType {
@@ -60,4 +63,4 @@ private:
     }
 };
 
-#endif // PG583_VARIANTSREADER_H
+#endif // PG583_IO_VARIANTS_READER_H

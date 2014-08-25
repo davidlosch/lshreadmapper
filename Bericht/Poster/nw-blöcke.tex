@@ -1,6 +1,8 @@
 \documentclass[english]{short}
 \usepackage{color}
+\usepackage{amsmath,amssymb,subfigure}
 \definecolor{gray}{rgb}{.6,.6,.6}
+\newcommand{\chardist}[2]{\ensuremath{\text{dist}(#1,#2)}}
 
 \begin{document}
 
@@ -29,4 +31,14 @@ Reference: & A & G & A & A & \textcolor{blue}{C} & \textcolor{blue}{G} & C & T &
 Read: & & & & A & \textcolor{blue}{C} & \textcolor{blue}{G} & C & T & & & T\\
 
 \end{tabular}
+
+\section{NW-Formel}
+The NW-matrix $M$ is calculated column by column. Each entry is calculated by the recursion formula
+
+\[
+M_{i,j} = \min \left\{\begin{array}{ll} M_{i-1,j-1} &+ \chardist{p_i}{t_j}\\ M_{i-1,j} &+ 1 \\ M_{i,j-1} &+ 1\end{array}\right. 
+\]
+
+where $p_i$ is the $i$-th char of the read und $t_j$ the $j$-th char of reference section.
+
 \end{document}

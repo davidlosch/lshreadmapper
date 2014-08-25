@@ -1,15 +1,14 @@
 #include "align/SemiGlobalAligner.h"
+#include "align/BacktracingMatrix.h"
+#include "align/Variant.h"
 
-#include <vector>
 #include <iostream>
 #include <sstream>
-#include <cstddef>
-#include <math.h>
+#include <algorithm>
 
-using std::string;
 using std::vector;
 
-SemiGlobalAligner::SemiGlobalAligner(VariantIndex& variantIndex) :
+SemiGlobalAligner::SemiGlobalAligner(VariantIndex &variantIndex) :
     variantIndex(variantIndex) {
 }
 
@@ -203,7 +202,7 @@ BacktracingColumn& SemiGlobalAligner::alignInsertion(const Variant &variant,
                                        vector<int> &bestMinimumPositions,
                                        BacktracingMatrix &b) {
     const auto &text = variant.getInsertionString();
-    size_t lastRow = lastRowArg; // TODO: fix int -> size_t
+    size_t lastRow = lastRowArg;
 
     for (size_t indelPos = 0; indelPos < seqan::length(text); indelPos++) {
         // iterate over columns

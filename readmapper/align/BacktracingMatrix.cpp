@@ -1,6 +1,5 @@
 #include "align/BacktracingMatrix.h"
-
-#include <iostream>
+#include "align/Variant.h"
 
 BacktracingMatrix::BacktracingMatrix(int maxErrors) :
     matrix(std::vector<BacktracingColumn>(1, BacktracingColumn(0, maxErrors))),
@@ -42,7 +41,7 @@ ptrdiff_t BacktracingMatrix::BacktracingMatrix::getHighestColumnIndex() const {
     return matrix.size() - 1;
 }
 
-const Variant &BacktracingMatrix::getVariantAt(size_t column) const {
+const Variant& BacktracingMatrix::getVariantAt(size_t column) const {
     return variantInColumn[column];
 }
 
@@ -59,7 +58,6 @@ void BacktracingMatrix::newColumn(size_t pos) {
 }
 
 void BacktracingMatrix::newColumn(size_t pos, const Variant &variant, int offset) {
-//    std::cout << "new Column("<<pos<<", "<<variant<<", "<<offset<<")" << std::endl;
     variantInColumn.push_back(variant);
     positionInColumn.push_back(pos);
     offsetInColumn.push_back(offset);
